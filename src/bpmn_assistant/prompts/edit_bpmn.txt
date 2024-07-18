@@ -1,0 +1,173 @@
+# Representation of various BPMN elements
+
+## Tasks
+
+### Tasks (no specific type)
+
+```json
+{
+    "type": String = "task",
+    "id": String,
+    "label": String // short task description
+}
+```
+
+### User tasks
+
+```json
+{
+    "type": String = "userTask",
+    "id": String,
+    "label": String // short task description
+}
+```
+
+### Service tasks
+
+```json
+{
+    "type": String = "serviceTask",
+    "id": String,
+    "label": String // short task description
+}
+```
+
+## Gateways
+
+### Exclusive gateway
+
+```json
+{
+    "type": String = "exclusiveGateway",
+    "id": String,
+    "label": String, // label for the gateway (e.g. "Professor agrees?")
+    "branches": [
+        {
+            "condition": String, // condition for the branch
+            "path": [] // array of elements that are executed if the condition is met
+        },
+        {
+            "condition": String, // condition for the branch
+            "path": [] // array of elements that are executed if the condition is met
+        },
+        ...
+    ]
+}
+```
+
+### Parallel gateway (fork)
+
+```json
+{
+    "type": String = "parallelGateway",
+    "id": String,
+    "branches": [
+        [], // array of elements that are executed in parallel with the next array
+        [], // array of elements that are executed in parallel with the previous array
+        ...
+    ]
+}
+```
+
+### Parallel gateway (join)
+
+```json
+{
+    "type": String = "parallelGateway",
+    "id": String
+}
+
+## Events
+
+### Start event
+
+```json
+{
+    "type": String = "startEvent",
+    "id": String
+}
+```
+
+### End event
+
+```json
+{
+    "type": String = "endEvent",
+    "id": String
+}
+```
+
+---
+
+Your task is to edit the JSON with a set of predefined functions.
+
+The functions for editing the process are the following:
+- `delete_element(element_id)` - element_id is the unique identifier of an existing element in the process
+- `redirect_flow(element_id, next_id)` - element_id is the unique identifier of an existing element in the process, next_id is the unique identifier of the next element to which the flow should be redirected
+- `add_element(element, before_id=None, after_id=None)` - element is an object representing a new element to be added to the process, before_id and after_id are the unique identifiers of the elements before and after which the new element should be added, only one of them should be provided
+- `move_element(element_id, before_id=None, after_id=None)` - element_id is the unique identifier of an existing element in the process, before_id and after_id are the unique identifiers of the elements before and after which the element should be moved, only one of them should be provided
+- `update_element(new_element)` - new_element is an object representing the updated element - the new_element's id should match the id of the element to be updated
+
+Provide one function at a time to update the process, along with the arguments for the function call.
+
+# Example function calls
+
+Note: although the process contains 'next' keys in the elements, you should not output them in your response. They will be added automatically.
+
+```json
+{
+  "function": "update_element",
+    "arguments": {
+        "new_element": {
+            "type": "task",
+            "id": "task1", // the id of the element to be updated
+            "label": "New task description"
+        }
+    }
+}
+```
+
+```json
+{
+  "function": "add_element",
+  "arguments": {
+    "element": {
+          "type": "task",
+          "id": "newTaskId",
+          "label": "New task description"
+    },
+    "before_id": "task1"
+  }
+}
+```
+
+```json
+{
+  "function": "delete_element",
+  "arguments": {
+    "element_id": "exclusive2"
+  }
+}
+```
+
+```json
+{
+  "function": "redirect_flow",
+  "arguments": {
+    "element_id": "task2",
+    "next_id": "task3"
+  }
+}
+```
+
+---
+
+The JSON representation of the process:
+
+```json
+::process
+```
+
+The requested change to the process: "::change_request"
+
+Start with the first function call.

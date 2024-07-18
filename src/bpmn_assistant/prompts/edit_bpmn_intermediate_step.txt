@@ -1,0 +1,16 @@
+Updated process:
+```json
+::process
+```
+
+You may continue editing the process or finish.
+
+If you believe you have completed the changes necessary and want to stop editing the process, simply output the following JSON:
+
+```json
+{
+  "stop": true
+}
+```
+
+Otherwise, you may continue editing the process using the previously mentioned functions.

@@ -1,0 +1,40 @@
+::message_history
+
+---
+
+Based on this message history, determine whether the last user message indicates that the user wants to:
+1. Make a modification to the process or create a new process.
+2. Ask for information or make conversation.
+
+Example messages where the user wants to make a modification or create a new process:
+- "Remove the task where the manager needs to approve the budget."
+- "Add a parallel gateway before the task to check the budget."
+- "Change the order of the last two tasks."
+- "Then change it."
+- "The process consists of the manager approving the budget, then the task to check the budget, and finally the task to create the report."
+- "After entering the grade, the professor should be notified."
+- "Visualize this process: first the user logs in, then the user creates a new document, and finally the user logs out."
+- a literal description of the process
+
+Example messages where the user is asking for information or making conversation:
+- "Can you describe the process?"
+- "What happens after the task to check the budget?"
+- "I don't understand what happens in that big exclusive gateway after the first task."
+- "Tell me more about that event."
+- "Can you help me create a new process?"
+- "I will explain the process to you, and you will then visualize it, ok?"
+
+Your response will be in the form of a JSON object with a single key, "intent", which will have the value "modify" if the user wants to make a modification or create a new process, or "talk" if the user is asking for information or making conversation.
+
+Response if the user wants to make a modification or create a new process:
+```json
+{
+    "intent": "modify",
+}
+```
+
+Response if the user is asking for information or making conversation:
+```json
+{
+    "intent": "talk",
+}

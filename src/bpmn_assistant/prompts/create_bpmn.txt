@@ -1,0 +1,212 @@
+# Representation of various BPMN elements
+
+## Tasks
+
+Specify the task type in the 'type' field.
+Only "task", "userTask" and "serviceTask" options are supported.
+
+```json
+{
+    "type": String = "task" | "userTask" | "serviceTask"
+    "id": String,
+    "label": String, // short task description
+    "next": String // id of the next element
+}
+```
+
+## Gateways
+
+### Exclusive gateway
+
+```json
+{
+    "type": String = "exclusiveGateway",
+    "id": String,
+    "label": String, // label for the gateway (e.g. "Professor agrees?")
+    "branches": [
+        {
+            "condition": String, // condition for the branch
+            "path": [] // array of elements that are executed if the condition is met
+        },
+        {
+            "condition": String, // condition for the branch
+            "path": [] // array of elements that are executed if the condition is met
+        },
+        ...
+    ]
+}
+```
+
+### Parallel gateway (fork)
+
+```json
+{
+    "type": String = "parallelGateway",
+    "id": String,
+    "branches": [
+        [], // array of elements that are executed in parallel with the next array
+        [], // array of elements that are executed in parallel with the previous array
+        ...
+    ]
+}
+```
+
+### Parallel gateway (join)
+
+```json
+{
+    "type": String = "parallelGateway",
+    "id": String,
+    "next": String // id of the next element
+}
+
+## Events
+
+### Start event
+
+```json
+{
+    "type": String = "startEvent",
+    "id": String,
+    "next": String // id of the next element
+}
+```
+
+### End event
+
+```json
+{
+    "type": String = "endEvent",
+    "id": String,
+    "next": null
+}
+```
+
+# Examples
+
+Textual description:
+"The student sends an email to the professor. The professor receives the email. If the professor agrees with the proposal, he replies to the student."
+
+```json
+{
+    "process": [
+        {
+            "type": "startEvent",
+            "id": "start1",
+            "next": "task1"
+        },
+        {
+            "type": "userTask",
+            "id": "task1",
+            "label": "Send email to professor",
+            "next": "task2"
+        },
+        {
+            "type": "task",
+            "id": "task2",
+            "label": "Receive the email",
+            "next": "exclusive1"
+        },
+        {
+            "type": "exclusiveGateway",
+            "id": "exclusive1",
+            "label": "Professor agrees?",
+            "branches": [
+                {
+                    "condition": "If the professor agrees",
+                    "path": [
+                        {
+                            "type": "task",
+                            "id": "task3",
+                            "label": "Reply to the student",
+                            "next": "end1"
+                        }
+                    ]
+                },
+                {
+                    "condition": "If the professor does not agree",
+                    "path": [
+                        {
+                            "type": "endEvent",
+                            "id": "end1",
+                            "next": null
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+```
+
+---
+
+Textual description:
+"The manager sends the mail to the supplier and prepares the documents. At the same time, the customer searches for the goods and picks up the goods."
+
+```json
+{
+    "process": [
+        {
+            "type": "startEvent",
+            "id": "start1",
+            "next": "parallel1"
+        },
+        {
+            "type": "parallelGateway",
+            "id": "parallel1",
+            "branches": [
+                [
+                    {
+                        "type": "serviceTask",
+                        "id": "task1",
+                        "label": "Send mail to supplier",
+                        "next": "task2"
+                    },
+                    {
+                        "type": "task",
+                        "id": "task2",
+                        "label": "Prepare the documents",
+                        "next": "join1"
+                    }
+                ],
+                [
+                    {
+                        "type": "task",
+                        "id": "task3",
+                        "label": "Search for the goods",
+                        "next": "task4"
+                    },
+                    {
+                        "type": "task",
+                        "id": "task4",
+                        "label": "Pick up the goods",
+                        "next": "join1"
+                    }
+                ]
+            ]
+        },
+        {
+            "type": "parallelGateway",
+            "id": "join1",
+            "next": "end1"
+        },
+        {
+            "type": "endEvent",
+            "id": "end1",
+            "next": null
+        }
+    ]
+}
+```
+
+---
+
+The following is the message history between the user and an AI assistant.
+
+Message history:
+```
+::message_history
+```
+
+Create a BPMN representation of the process described in the messages.

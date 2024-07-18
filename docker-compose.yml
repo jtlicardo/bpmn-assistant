@@ -1,0 +1,37 @@
+services:
+
+  bpmn_assistant:
+    build:
+      context: .
+      dockerfile: bpmn_assistant.Dockerfile
+    ports:
+        - "8000:8000"
+    env_file:
+      - ./src/bpmn_assistant/.env
+    networks:
+      - bpmn-network
+
+  bpmn_layout_server:
+    build:
+      context: .
+      dockerfile: bpmn_layout_server.Dockerfile
+    ports:
+      - "3001:3001"
+    networks:
+      - bpmn-network
+
+  bpmn_frontend:
+    build:
+      context: .
+      dockerfile: bpmn_frontend.Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - bpmn_assistant
+      - bpmn_layout_server
+    networks:
+        - bpmn-network
+
+networks:
+  bpmn-network:
+    driver: bridge

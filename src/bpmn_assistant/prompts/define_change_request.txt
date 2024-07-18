@@ -1,0 +1,21 @@
+::message_history
+
+---
+
+The last user message indicates that the user wants to make a modification to the BPMN process.
+
+Based on the message history, and the last user message, construct a 'change request' in the form of a short string.
+
+Example change requests:
+- "Change task1 from a task to a user task"
+- "Remove the gateway after task2"
+- "Add a sequence flow from task1 to task3, and from task3 to task4"
+- "Add a task between task2 and task3 where the customer provides feedback"
+
+Your response will be in the form of a JSON object with a single key, "change_request", and a string value.
+
+```json
+{
+    "change_request": "your change request here"
+}
+```
