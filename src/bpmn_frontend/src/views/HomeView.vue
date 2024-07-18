@@ -50,6 +50,9 @@ export default {
   },
   methods: {
     async handleDrop(event) {
+      console.warn("Not yet implemented!");
+      return;
+
       event.preventDefault(); // Prevent the browser from default file handling
       if (event.dataTransfer.items) {
         for (let i = 0; i < event.dataTransfer.items.length; i++) {
@@ -65,8 +68,7 @@ export default {
                   this.bpmnViewer.get("canvas").zoom("fit-viewport");
                   console.log("BPMN diagram loaded successfully");
                   this.bpmnXml = xmlContent;
-                  // TODO: not yet implemented on the backend!
-                  // await this.createBpmnJson(xmlContent);
+                  await this.createBpmnJson(xmlContent);
                 } catch (err) {
                   console.error("Failed to import BPMN diagram:", err);
                 }

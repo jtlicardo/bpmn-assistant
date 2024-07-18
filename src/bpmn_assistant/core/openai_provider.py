@@ -57,7 +57,7 @@ class OpenAIProvider(LLMProvider):
                 return self._process_response(raw_output, messages)
 
     def get_initial_messages(self):
-        messages = (
+        return (
             [
                 {
                     "role": "system",
@@ -67,8 +67,6 @@ class OpenAIProvider(LLMProvider):
             if self.output_mode == "json"
             else []
         )
-        # messages.append({"role": "user", "content": None}) WTF???
-        return messages
 
     def check_model_compatibility(self, model: str) -> bool:
         return model in [m.value for m in OpenAIModels]
