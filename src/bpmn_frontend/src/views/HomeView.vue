@@ -21,6 +21,7 @@
 <script>
 import BpmnModeler from "bpmn-js/lib/Modeler";
 import ChatInterface from "../components/ChatInterface.vue";
+// import initialDiagram from "../assets/initialDiagram.js";
 
 import "bpmn-js/dist/assets/diagram-js.css";
 import "bpmn-js/dist/assets/bpmn-js.css";
@@ -42,6 +43,17 @@ export default {
     this.bpmnViewer = new BpmnModeler({
       container: "#canvas",
     });
+
+    // this.bpmnViewer
+    //   .importXML(initialDiagram)
+    //   .then((result) => {
+    //     const { warnings } = result;
+    //     console.log("BPMN diagram imported successfully", warnings);
+    //     this.bpmnViewer.get("canvas").zoom("fit-viewport");
+    //   })
+    //   .catch((err) => {
+    //     console.error("Failed to import BPMN diagram:", err);
+    //   });
   },
   beforeUnmount() {
     if (this.bpmnViewer) {

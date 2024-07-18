@@ -47,7 +47,6 @@
           rows="6"
           @keydown.enter.prevent="handleKeyDown"
           class="mx-2"
-          hide-details
         >
         </v-textarea>
         <v-btn
@@ -350,6 +349,6 @@ export default {
 }
 
 .send-button {
-  margin-bottom: 60px;
+  margin-bottom: 90px;
 }
 </style>
