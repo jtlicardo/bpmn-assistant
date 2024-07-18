@@ -1,5 +1,6 @@
 from importlib import resources
 from typing import Optional
+import traceback
 
 from bpmn_assistant.config import logger
 from bpmn_assistant.core import LLMFacade
@@ -47,12 +48,13 @@ class BpmnModelingService:
                 self._validate_bpmn(response["process"], None)
                 return response["process"]  # Return the process if it's valid
             except Exception as e:
-                error_message = str(e)
                 logger.warning(
-                    f"Validation error (attempt {attempts}): {error_message}"
+                    f"Validation error (attempt {attempts}): {str(e)}\n"
+                    f"Invalid process: {response['process']}\n"
+                    f"Traceback: {traceback.format_exc()}"
                 )
 
-                new_prompt = f"Error: {error_message}. Try again."
+                new_prompt = f"Error: {str(e)}. Try again."
 
                 response, _ = llm_facade.call(new_prompt)
 
@@ -98,6 +100,11 @@ class BpmnModelingService:
         Raises:
             Exception: If the BPMN element is invalid.
         """
+        if "id" not in element:
+            raise Exception(f"Element is missing an ID: {element}")
+        elif "type" not in element:
+            raise Exception(f"Element is missing a type: {element}")
+
         # TODO: this needs to be formalized
         supported_elements = [
             "task",
@@ -114,13 +121,10 @@ class BpmnModelingService:
                 f"Unsupported element type: {element['type']}. Supported types: {supported_elements}"
             )
 
-        if parent_gateway is not None and element["next"] == parent_gateway["id"]:
+        if parent_gateway is not None and "next" in element and element["next"] == parent_gateway["id"]:
             raise Exception(
                 f"Element {element['id']} cannot point back to its parent gateway {parent_gateway['id']}"
             )
-
-        if "id" not in element:
-            raise Exception(f"Element is missing an ID: {element}")
 
         if element["type"] in ["task", "userTask", "serviceTask"]:
             if "label" not in element:

@@ -1,5 +1,6 @@
 from importlib import resources
 
+from bpmn_assistant.config import logger
 from bpmn_assistant.core import LLMFacade
 from bpmn_assistant.utils import prepare_prompt
 
@@ -24,6 +25,8 @@ def determine_intent(llm_facade: LLMFacade, message_history: list) -> dict:
     )
 
     json_object, _ = llm_facade.call(prompt, max_tokens=50, temperature=0.3)
+
+    logger.info(f"Intent: {json_object}")
 
     # TODO: validate the response and retry if necessary
 
