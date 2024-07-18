@@ -17,6 +17,7 @@ Example messages where the user wants to make a modification or create a new pro
 - a literal description of the process
 
 Example messages where the user is asking for information or making conversation:
+- "Hello"
 - "Can you describe the process?"
 - "What happens after the task to check the budget?"
 - "I don't understand what happens in that big exclusive gateway after the first task."

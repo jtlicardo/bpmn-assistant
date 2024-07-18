@@ -62,30 +62,6 @@ def get_llm_facade(
     )
 
 
-def get_cheapest_model(model: str) -> LLMFacade:
-    """
-    Get the cheapest model for a given provider.
-    """
-    load_dotenv(override=True)
-
-    if is_openai_model(model):
-        api_key = os.getenv("OPENAI_API_KEY")
-        provider = Provider.OPENAI.value
-        model_to_be_used = OpenAIModels.GPT_3_5.value
-    elif is_anthropic_model(model):
-        api_key = os.getenv("ANTHROPIC_API_KEY")
-        provider = Provider.ANTHROPIC.value
-        model_to_be_used = AnthropicModels.HAIKU.value
-    else:
-        raise Exception("Invalid model")
-
-    return LLMFacade(
-        provider,
-        api_key,
-        model_to_be_used,
-    )
-
-
 def get_provider_based_on_model(model: str) -> Provider:
     if is_openai_model(model):
         return Provider.OPENAI

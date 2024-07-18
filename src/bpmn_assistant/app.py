@@ -11,7 +11,6 @@ from bpmn_assistant.services import (
     ConversationalService,
 )
 from bpmn_assistant.utils import (
-    get_cheapest_model,
     get_llm_facade,
     get_available_providers,
 )
@@ -56,7 +55,7 @@ async def _determine_intent(request: DetermineIntentRequest) -> JSONResponse:
     Determine the intent of the user query
     """
     try:
-        llm_facade = get_cheapest_model(request.model)
+        llm_facade = get_llm_facade(request.model)
         intent = determine_intent(llm_facade, request.message_history)
         return JSONResponse(content=intent)
     except Exception as e:
