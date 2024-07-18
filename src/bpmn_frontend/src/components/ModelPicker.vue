@@ -17,7 +17,7 @@ export default {
     return {
       selectedModel: "",
       models: [
-        { value: "gpt-3.5-turbo", title: "GPT-3.5 Turbo", provider: "openai" },
+        { value: "gpt-4o-mini", title: "GPT-4o mini", provider: "openai" },
         { value: "gpt-4-turbo", title: "GPT-4 Turbo", provider: "openai" },
         { value: "gpt-4o", title: "GPT-4o", provider: "openai" },
         {
@@ -78,7 +78,7 @@ export default {
         );
 
         if (this.availableProviders.includes("openai")) {
-          this.onModelChange("gpt-4o");
+          this.onModelChange("gpt-4o-mini");
         } else if (this.availableProviders.includes("anthropic")) {
           this.onModelChange("claude-3-5-sonnet-20240620");
         }
