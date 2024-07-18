@@ -67,7 +67,7 @@
         @click="reset"
         :disabled="isLoading || messages.length === 0"
         color="blue-lighten-5"
-        density="comfortable"
+        density="compact"
       >
         New chat
       </v-btn>
