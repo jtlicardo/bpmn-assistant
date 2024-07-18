@@ -93,6 +93,13 @@ The application currently supports a subset of BPMN elements:
 
 * The application currently only supports a subset of BPMN elements.
 * The quality of the output depends on the underlying AI models and may not always be perfect.
+* The AI assistant does not "see" manual edits made to the diagram. It always responds based on its last generated version. Keep this in mind when interacting with the assistant after making manual changes.
+
+## Future improvements
+
+* Expanded BPMN element support
+* Implementing LLM awareness of manual edits to the diagram
+* Drag and drop functionality for existing BPMN files
 
 ## Contact
 
