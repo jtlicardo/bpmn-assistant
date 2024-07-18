@@ -202,6 +202,86 @@ Textual description:
 
 ---
 
+Textual description: "The process starts with a decision. If Option A is selected, Task A is performed. If Option B is selected, Task B is performed. Task A is followed by another decision. If Sub-option 1 is selected, Task A1 is performed. If Sub-option 2 is selected, Task A2 is performed."
+
+
+```json
+{
+  "process": [
+    {
+      "type": "startEvent",
+      "id": "start",
+      "next": "gateway1"
+    },
+    {
+      "type": "exclusiveGateway",
+      "id": "gateway1",
+      "label": "Main Decision",
+      "branches": [
+        {
+          "condition": "Option A",
+          "path": [
+            {
+              "type": "task",
+              "id": "taskA",
+              "label": "Perform Task A",
+              "next": "gateway2"
+            },
+            {
+              "type": "exclusiveGateway",
+              "id": "gateway2",
+              "label": "Nested Decision",
+              "branches": [
+                {
+                  "condition": "Sub-option 1",
+                  "path": [
+                    {
+                      "type": "task",
+                      "id": "taskA1",
+                      "label": "Perform Task A1",
+                      "next": "end"
+                    }
+                  ]
+                },
+                {
+                  "condition": "Sub-option 2",
+                  "path": [
+                    {
+                      "type": "task",
+                      "id": "taskA2",
+                      "label": "Perform Task A2",
+                      "next": "end"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "condition": "Option B",
+          "path": [
+            {
+              "type": "task",
+              "id": "taskB",
+              "label": "Perform Task B",
+              "next": "end"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "endEvent",
+      "id": "end",
+      "next": null
+    }
+  ]
+}
+```
+
+---
+
 The following is the message history between the user and an AI assistant.
 
 Message history:

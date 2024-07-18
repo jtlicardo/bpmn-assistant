@@ -8,14 +8,15 @@ Based on this message history, determine whether the last user message indicates
 
 Example messages where the user wants to make a modification or create a new process:
 - a literal description of the process
-- "Create this process: first the user logs in, then the user creates a new document, and finally the user logs out."
+- "Create this process: [description of the process]"
+- "Build this: [description of the process]"
 - "Remove the task where the manager needs to approve the budget."
 - "Add a parallel gateway before the task to check the budget."
 - "Change the order of the last two tasks."
 - "Then change it."
 - "The process consists of the manager approving the budget, then the task to check the budget, and finally the task to create the report."
 - "After entering the grade, the professor should be notified."
-- "Visualize this process: first the user logs in, then the user creates a new document, and finally the user logs out."
+- "Visualize this process: [description of the process]"
 
 Example messages where the user is asking for information or making conversation:
 - "Hello"
