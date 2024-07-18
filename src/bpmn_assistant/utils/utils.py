@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from bpmn_assistant.core import LLMFacade
+from bpmn_assistant.core import LLMFacade, MessageItem
 from bpmn_assistant.core.enums import Provider, OpenAIModels, AnthropicModels
 
 
@@ -31,7 +31,7 @@ def prepare_prompt(prompt_template, **kwargs):
 
 
 def get_llm_facade(
-    model: str, output_mode: str = "json", streaming: bool = False
+        model: str, output_mode: str = "json", streaming: bool = False
 ) -> LLMFacade:
     """
     Get the LLM facade based on the model type
@@ -91,3 +91,12 @@ def is_openai_model(model: str) -> bool:
 
 def is_anthropic_model(model: str) -> bool:
     return model in [model.value for model in AnthropicModels]
+
+
+def message_history_to_string(message_history: list[MessageItem]) -> str:
+    """
+    Convert a message history list into a formatted string.
+    """
+    return "\n".join(
+        f"{message.role.capitalize()}: {message.content}" for message in message_history
+    )

@@ -3,7 +3,7 @@ import os
 import pytest
 from dotenv import load_dotenv
 
-from bpmn_assistant.core import LLMFacade
+from bpmn_assistant.core import LLMFacade, MessageItem
 from bpmn_assistant.core.enums import Provider, AnthropicModels, OpenAIModels
 
 
@@ -18,7 +18,7 @@ def anthropic_facade():
 def openai_facade():
     load_dotenv(override=True)
     api_key = os.getenv("OPENAI_API_KEY")
-    return LLMFacade(Provider.OPENAI.value, api_key, OpenAIModels.GPT_4O.value)
+    return LLMFacade(Provider.OPENAI.value, api_key, OpenAIModels.GPT_4O_MINI.value)
 
 
 @pytest.fixture
@@ -178,6 +178,11 @@ def linear_process_fixture():
         {"type": "endEvent", "id": "end1", "next": None},
     ]
 
+def dict_to_message_item(message_dict):
+    return MessageItem(**message_dict)
+
+def convert_message_history(message_history):
+    return [dict_to_message_item(message) for message in message_history]
 
 @pytest.fixture
 def message_history_create_bpmn():
@@ -185,7 +190,7 @@ def message_history_create_bpmn():
     Description: A message history that contains a conversation between a user and an assistant.
     The user is asking the assistant to help them create a BPMN process.
     """
-    return [
+    message_history = [
         {"role": "user", "content": "Can you help me create a BPMN process?"},
         {
             "role": "assistant",
@@ -197,6 +202,8 @@ def message_history_create_bpmn():
         },
     ]
 
+    return convert_message_history(message_history)
+
 
 @pytest.fixture
 def message_history_combine_tasks():
@@ -204,7 +211,7 @@ def message_history_combine_tasks():
     Description: A message history that contains a conversation between a user and an assistant.
     The user is asking the assistant to combine two tasks in a BPMN process.
     """
-    return [
+    message_history = [
         {
             "role": "user",
             "content": "Can you help me create a BPMN process for a university exam?",
@@ -228,6 +235,8 @@ def message_history_combine_tasks():
         },
     ]
 
+    return convert_message_history(message_history)
+
 
 @pytest.fixture
 def message_history_explain_process():
@@ -235,7 +244,7 @@ def message_history_explain_process():
     Description: A message history that contains a conversation between a user and an assistant.
     The user is asking the assistant to explain the BPMN process that was created.
     """
-    return [
+    message_history = [
         {
             "role": "user",
             "content": "Can you help me create a BPMN process for a university exam?",
@@ -258,3 +267,5 @@ def message_history_explain_process():
             "content": "Can you explain what you did?",
         },
     ]
+
+    return convert_message_history(message_history)

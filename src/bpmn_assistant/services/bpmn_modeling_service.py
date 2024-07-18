@@ -3,12 +3,12 @@ from typing import Optional
 import traceback
 
 from bpmn_assistant.config import logger
-from bpmn_assistant.core import LLMFacade
+from bpmn_assistant.core import LLMFacade, MessageItem
 from bpmn_assistant.services.process_editing import (
     BpmnEditorService,
     define_change_request,
 )
-from bpmn_assistant.utils import prepare_prompt
+from bpmn_assistant.utils import prepare_prompt, message_history_to_string
 
 
 class BpmnModelingService:
@@ -16,7 +16,7 @@ class BpmnModelingService:
     def create_bpmn(
         self,
         llm_facade: LLMFacade,
-        message_history: list,
+        message_history: list[MessageItem],
         max_retries: int = 3,
     ) -> list:
         """
@@ -34,7 +34,7 @@ class BpmnModelingService:
 
         prompt = prepare_prompt(
             prompt_template,
-            message_history=str(message_history),
+            message_history=message_history_to_string(message_history)
         )
 
         response, _ = llm_facade.call(prompt)
@@ -63,7 +63,7 @@ class BpmnModelingService:
         )
 
     def edit_bpmn(
-        self, llm_facade: LLMFacade, process: list, message_history: list
+        self, llm_facade: LLMFacade, process: list, message_history: list[MessageItem]
     ) -> list:
         change_request = define_change_request(llm_facade, message_history)
 

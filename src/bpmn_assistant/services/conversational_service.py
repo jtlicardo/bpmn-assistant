@@ -5,11 +5,12 @@ from anthropic import MessageStreamManager
 from openai import Stream
 from openai.types.chat import ChatCompletionChunk
 
+from bpmn_assistant.core import MessageItem
 from bpmn_assistant.core.enums import Provider
 from bpmn_assistant.utils import (
     prepare_prompt,
     get_provider_based_on_model,
-    get_llm_facade,
+    get_llm_facade, message_history_to_string,
 )
 
 
@@ -20,7 +21,7 @@ class ConversationalService:
         self.llm_facade = get_llm_facade(model, output_mode="text", streaming=True)
 
     def respond_to_query(
-        self, message_history: list, process: Optional[list]
+        self, message_history: list[MessageItem], process: Optional[list]
     ) -> Generator:
         """
         Respond to the user query based on the message history and BPMN process.
@@ -38,7 +39,7 @@ class ConversationalService:
 
             prompt = prepare_prompt(
                 prompt_template,
-                message_history=str(message_history),
+                message_history=message_history_to_string(message_history),
             )
         else:
             prompt_template = resources.read_text(
@@ -47,7 +48,7 @@ class ConversationalService:
 
             prompt = prepare_prompt(
                 prompt_template,
-                message_history=str(message_history),
+                message_history=message_history_to_string(message_history),
                 process=str(process),
             )
 
@@ -55,7 +56,7 @@ class ConversationalService:
 
         yield from self._process_streaming_response(response)
 
-    def make_final_comment(self, message_history: list, process: list) -> Generator:
+    def make_final_comment(self, message_history: list[MessageItem], process: list) -> Generator:
         """
         Make a final comment after the process is created/edited.
         Args:
@@ -71,7 +72,7 @@ class ConversationalService:
 
         prompt = prepare_prompt(
             prompt_template,
-            message_history=str(message_history),
+            message_history=message_history_to_string(message_history),
             process=str(process),
         )
 

@@ -1,11 +1,11 @@
 from importlib import resources
 
 from bpmn_assistant.config import logger
-from bpmn_assistant.core import LLMFacade
-from bpmn_assistant.utils import prepare_prompt
+from bpmn_assistant.core import LLMFacade, MessageItem
+from bpmn_assistant.utils import prepare_prompt, message_history_to_string
 
 
-def define_change_request(llm_facade: LLMFacade, message_history: list) -> str:
+def define_change_request(llm_facade: LLMFacade, message_history: list[MessageItem]) -> str:
     """
     Defines the change to be made in the BPMN process based on the message history.
     Args:
@@ -23,7 +23,7 @@ def define_change_request(llm_facade: LLMFacade, message_history: list) -> str:
 
     prompt = prepare_prompt(
         prompt_template,
-        message_history=str(message_history),
+        message_history=message_history_to_string(message_history),
     )
 
     json_object, _ = llm_facade.call(prompt, max_tokens=100, temperature=0.5)

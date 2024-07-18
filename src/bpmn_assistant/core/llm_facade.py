@@ -52,7 +52,7 @@ class LLMFacade:
         If the output mode is text, the response is returned as a string.
         If streaming is enabled, the response is returned as a stream.
         """
-        logger.info("Calling LLM")
+        logger.info(f"Calling LLM: {self.model}")
 
         self.messages.append({"role": "user", "content": prompt})
 

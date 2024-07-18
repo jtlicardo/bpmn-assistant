@@ -11,7 +11,7 @@
           v-for="(message, index) in messages"
           :key="index"
           :role="message.role"
-          :text="message.text"
+          :content="message.content"
         />
 
         <v-alert
@@ -155,7 +155,7 @@ export default {
         return;
       }
 
-      this.messages.push({ text: this.currentInput, role: "user" });
+      this.messages.push({ content: this.currentInput, role: "user" });
       this.currentInput = "";
 
       const intent = await this.determineIntent();
@@ -244,9 +244,9 @@ export default {
             this.messages[this.messages.length - 1].role === "assistant"
           ) {
             const lastMessage = this.messages[this.messages.length - 1];
-            lastMessage.text = (lastMessage.text || "") + newText;
+            lastMessage.content = (lastMessage.content || "") + newText;
           } else {
-            this.messages.push({ text: newText, role: "assistant" });
+            this.messages.push({ content: newText, role: "assistant" });
           }
         };
 

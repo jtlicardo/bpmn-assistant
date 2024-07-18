@@ -7,7 +7,7 @@
       <v-card-subtitle class="mt-2"
         ><b>{{ roleDisplay }}</b></v-card-subtitle
       >
-      <v-card-text class="card-text">{{ text }}</v-card-text>
+      <v-card-text class="card-text">{{ content }}</v-card-text>
     </v-card>
   </div>
 </template>
@@ -16,7 +16,7 @@
 export default {
   props: {
     role: String,
-    text: String,
+    content: String,
   },
   computed: {
     roleDisplay() {

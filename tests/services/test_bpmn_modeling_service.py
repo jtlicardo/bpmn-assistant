@@ -9,10 +9,10 @@ from bpmn_assistant.services import BpmnModelingService
 class TestCreateBpmn:
 
     @pytest.mark.skip(reason="Test with real API")
-    def test_create_bpmn(self, message_history_create_bpmn, anthropic_facade):
+    def test_create_bpmn(self, message_history_create_bpmn, openai_facade):
         bpmn_service = BpmnModelingService()
 
-        result = bpmn_service.create_bpmn(anthropic_facade, message_history_create_bpmn)
+        result = bpmn_service.create_bpmn(openai_facade, message_history_create_bpmn)
 
         print(result)
 
