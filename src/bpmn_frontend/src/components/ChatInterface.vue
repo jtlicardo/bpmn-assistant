@@ -38,23 +38,35 @@
     </div>
 
     <div class="input-area">
-      <v-textarea
-        label="Message BPMN Assistant..."
-        v-model="currentInput"
-        :disabled="isLoading"
-        :counter="1000"
-        rows="6"
-        @keydown.enter.prevent="handleKeyDown"
-        class="mx-2"
-      >
-      </v-textarea>
+      <div class="input-wrapper">
+        <v-textarea
+          label="Message BPMN Assistant..."
+          v-model="currentInput"
+          :disabled="isLoading"
+          :counter="1000"
+          rows="6"
+          @keydown.enter.prevent="handleKeyDown"
+          class="mx-2"
+          hide-details
+        >
+        </v-textarea>
+        <v-btn
+          @click="handleMessageSubmit"
+          :disabled="isLoading || !currentInput.trim()"
+          color="primary"
+          class="send-button"
+          icon="mdi-send"
+          density="comfortable"
+        >
+        </v-btn>
+      </div>
     </div>
 
     <div class="d-flex justify-center">
       <v-btn
         class="mr-5"
         @click="reset"
-        :disabled="isLoading"
+        :disabled="isLoading || messages.length === 0"
         color="blue-lighten-5"
         density="comfortable"
       >
@@ -65,7 +77,7 @@
         :disabled="isLoading"
         v-if="isDownloadReady"
         color="red-lighten-5"
-        density="comfortable"
+        density="compact"
       >
         Download
       </v-btn>
@@ -326,5 +338,18 @@ export default {
 .input-area {
   margin-top: auto;
   padding: 10px;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: flex-end;
+}
+
+.v-textarea {
+  flex-grow: 1;
+}
+
+.send-button {
+  margin-bottom: 60px;
 }
 </style>
