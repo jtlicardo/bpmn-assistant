@@ -3,13 +3,13 @@ import json
 from openai import OpenAI
 
 from bpmn_assistant.config import logger
-from .enums import OpenAIModels
+from .enums import OpenAIModels, OutputMode
 from .llm_provider import LLMProvider
 
 
 class OpenAIProvider(LLMProvider):
     def __init__(
-        self, api_key: str, output_mode: str = "json", streaming: bool = False
+        self, api_key: str, output_mode: OutputMode = OutputMode.JSON, streaming: bool = False
     ):
         self.api_key = api_key
         self.output_mode = output_mode
@@ -22,7 +22,7 @@ class OpenAIProvider(LLMProvider):
         """
         client = OpenAI(api_key=self.api_key)
 
-        if self.output_mode == "json":
+        if self.output_mode == OutputMode.JSON:
             response = client.chat.completions.create(
                 model=model,
                 response_format={"type": "json_object"},
@@ -64,7 +64,7 @@ class OpenAIProvider(LLMProvider):
                     "content": "You are a helpful assistant designed to output JSON.",
                 }
             ]
-            if self.output_mode == "json"
+            if self.output_mode == OutputMode.JSON
             else []
         )
 
@@ -77,7 +77,7 @@ class OpenAIProvider(LLMProvider):
         If the output mode is JSON, the raw output is parsed and returned as a JSON object.
         If the output mode is text, the raw output is returned as is.
         """
-        if self.output_mode == "json":
+        if self.output_mode == OutputMode.JSON:
             try:
                 json_object = json.loads(raw_output)
                 messages.append(
@@ -89,7 +89,7 @@ class OpenAIProvider(LLMProvider):
                 with open("raw_output.txt", "w", encoding="utf-8") as f:
                     f.write(raw_output)
                 raise Exception("Invalid JSON response from OpenAI")
-        elif self.output_mode == "text":
+        elif self.output_mode == OutputMode.TEXT:
             messages.append({"role": "assistant", "content": raw_output})
             return raw_output, messages
         else:

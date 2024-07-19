@@ -3,12 +3,12 @@ import json
 from anthropic import Anthropic
 
 from bpmn_assistant.config import logger
-from .enums import AnthropicModels
+from .enums import AnthropicModels, OutputMode
 from .llm_provider import LLMProvider
 
 
 class AnthropicProvider(LLMProvider):
-    def __init__(self, api_key: str, output_mode: str, streaming: bool):
+    def __init__(self, api_key: str, output_mode: OutputMode = OutputMode.JSON, streaming: bool = False):
         self.api_key = api_key
         self.output_mode = output_mode
         self.streaming = streaming
@@ -20,7 +20,7 @@ class AnthropicProvider(LLMProvider):
         """
         client = Anthropic(api_key=self.api_key)
 
-        if self.output_mode == "json":
+        if self.output_mode == OutputMode.JSON:
             # We add "{" to constrain the model to output a JSON object
             messages.append({"role": "assistant", "content": "{"})
 
@@ -74,7 +74,7 @@ class AnthropicProvider(LLMProvider):
         If the output mode is JSON, the raw output is parsed and returned as a JSON object.
         If the output mode is text, the raw output is returned as is.
         """
-        if self.output_mode == "json":
+        if self.output_mode == OutputMode.JSON:
             try:
                 json_object = json.loads(raw_output)
                 messages.append(
@@ -86,7 +86,7 @@ class AnthropicProvider(LLMProvider):
                 with open("raw_output.txt", "w", encoding="utf-8") as f:
                     f.write(raw_output)
                 raise Exception("Invalid JSON response from Anthropic")
-        elif self.output_mode == "text":
+        elif self.output_mode == OutputMode.TEXT:
             messages.append({"role": "assistant", "content": raw_output})
             return raw_output, messages
         else:

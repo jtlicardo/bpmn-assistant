@@ -6,7 +6,7 @@ from openai import Stream
 from openai.types.chat import ChatCompletionChunk
 
 from bpmn_assistant.core import MessageItem
-from bpmn_assistant.core.enums import Provider
+from bpmn_assistant.core.enums import Provider, OutputMode
 from bpmn_assistant.utils import (
     prepare_prompt,
     get_provider_based_on_model,
@@ -18,7 +18,7 @@ class ConversationalService:
 
     def __init__(self, model: str):
         self.provider = get_provider_based_on_model(model)
-        self.llm_facade = get_llm_facade(model, output_mode="text", streaming=True)
+        self.llm_facade = get_llm_facade(model, output_mode=OutputMode.TEXT, streaming=True)
 
     def respond_to_query(
         self, message_history: list[MessageItem], process: Optional[list]

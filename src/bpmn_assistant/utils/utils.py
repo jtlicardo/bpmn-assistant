@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 
 from bpmn_assistant.core import LLMFacade, MessageItem
-from bpmn_assistant.core.enums import Provider, OpenAIModels, AnthropicModels
+from bpmn_assistant.core.enums import Provider, OpenAIModels, AnthropicModels, OutputMode
 
 
 def prepare_prompt(prompt_template, **kwargs):
@@ -31,13 +31,13 @@ def prepare_prompt(prompt_template, **kwargs):
 
 
 def get_llm_facade(
-        model: str, output_mode: str = "json", streaming: bool = False
+        model: str, output_mode: OutputMode = OutputMode.JSON, streaming: bool = False
 ) -> LLMFacade:
     """
     Get the LLM facade based on the model type
     Args:
         model: The model to use
-        output_mode: The output mode for the LLM response ('json' or 'text').
+        output_mode: The output mode for the LLM response (JSON or text)
         streaming: Whether to use streaming or not.
     Returns:
         LLMFacade: The LLM facade

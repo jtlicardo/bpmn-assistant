@@ -2,6 +2,7 @@ from openai import Stream
 from anthropic import MessageStreamManager
 from openai.types.chat import ChatCompletionChunk
 
+from bpmn_assistant.core.enums import OutputMode
 from bpmn_assistant.core.llm_provider import LLMProvider
 from bpmn_assistant.core.provider_factory import ProviderFactory
 from bpmn_assistant.config import logger
@@ -13,7 +14,7 @@ class LLMFacade:
         provider: str,
         api_key: str,
         model: str,
-        output_mode: str = "json",
+        output_mode: OutputMode = OutputMode.JSON,
         streaming: bool = False,
     ):
         """
