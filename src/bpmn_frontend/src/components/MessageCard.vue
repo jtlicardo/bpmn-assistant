@@ -7,7 +7,7 @@
       <v-card-subtitle class="mt-2"
         ><b>{{ roleDisplay }}</b></v-card-subtitle
       >
-      <v-card-text class="card-text">{{ content }}</v-card-text>
+      <v-card-text class="card-text" v-html="formattedContent"></v-card-text>
     </v-card>
   </div>
 </template>
@@ -21,6 +21,9 @@ export default {
   computed: {
     roleDisplay() {
       return this.role === "user" ? "You" : "BPMN Assistant";
+    },
+    formattedContent() {
+      return this.content.replace(/\n- /g, "<br>• ").replace(/\n/g, "<br>");
     },
   },
   methods: {

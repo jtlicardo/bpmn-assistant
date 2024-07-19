@@ -83,7 +83,6 @@ export default {
         }
       } catch (error) {
         console.error("Error fetching available providers", error);
-        alert("Error fetching available providers. Is the server running?");
       }
     },
   },

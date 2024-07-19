@@ -280,6 +280,7 @@ export default {
           }
 
           const chunk = new TextDecoder("utf-8").decode(value);
+          // console.log(JSON.stringify(chunk));
           updateOrAddLastMessage(chunk);
 
           return reader.read().then(processText);
@@ -371,10 +372,6 @@ export default {
 .input-wrapper {
   display: flex;
   align-items: flex-end;
-}
-
-.v-textarea {
-  flex-grow: 1;
 }
 
 .send-button {
