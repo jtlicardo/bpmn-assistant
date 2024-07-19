@@ -35,6 +35,15 @@
           class="mb-5"
         />
       </div>
+
+      <v-alert
+        v-if="hasError"
+        type="error"
+        text="An error occurred while processing your request. Please try again."
+        class="mb-5 text-body-2"
+        closable
+        @click:close="hasError = false"
+      />
     </div>
 
     <div class="input-area">
@@ -92,6 +101,7 @@
 import ModelPicker from "./ModelPicker.vue";
 import MessageCard from "./MessageCard.vue";
 import { toRaw } from "vue";
+import Intent from "../enums/Intent";
 
 export default {
   name: "ChatInterface",
@@ -112,12 +122,14 @@ export default {
       messages: [],
       currentInput: "",
       selectedModel: "",
+      hasError: false,
     };
   },
   methods: {
     reset() {
       this.messages = [];
       this.currentInput = "";
+      this.hasError = false;
       this.onBpmnJsonReceived(null);
       this.onBpmnXmlReceived("");
     },
@@ -155,39 +167,41 @@ export default {
         return;
       }
 
+      // Clear any previous errors
+      this.hasError = false;
+
       this.messages.push({ content: this.currentInput, role: "user" });
       this.currentInput = "";
 
+      this.$nextTick(() => {
+        this.scrollToBottom();
+      });
+
       const intent = await this.determineIntent();
 
-      if (intent === "talk") {
-        // Respond to user query
-        await this.talk(this.process, this.selectedModel, false);
-
-        this.$nextTick(() => {
-          this.scrollToBottom();
-        });
-      } else if (intent === "modify") {
-        this.isLoading = true;
-
-        // Create or edit process
-        const { bpmnXml, bpmnJson } = await this.modify(
-          this.process,
-          this.selectedModel
-        );
-
-        this.onBpmnJsonReceived(bpmnJson);
-        this.onBpmnXmlReceived(bpmnXml);
-        this.isLoading = false;
-
-        // Make final comment after modifying BPMN
-        await this.talk(bpmnJson, this.selectedModel, true);
-
-        this.$nextTick(() => {
-          this.scrollToBottom();
-        });
-      } else {
-        console.error("Unknown intent:", intent);
+      switch (intent) {
+        case Intent.TALK:
+          await this.talk(this.process, this.selectedModel, false);
+          this.$nextTick(() => {
+            this.scrollToBottom();
+          });
+          break;
+        case Intent.MODIFY:
+          this.isLoading = true;
+          const { bpmnXml, bpmnJson } = await this.modify(
+            this.process,
+            this.selectedModel
+          );
+          this.onBpmnJsonReceived(bpmnJson);
+          this.onBpmnXmlReceived(bpmnXml);
+          this.isLoading = false;
+          await this.talk(bpmnJson, this.selectedModel, true); // Make final comment
+          this.$nextTick(() => {
+            this.scrollToBottom();
+          });
+          break;
+        default:
+          console.error("Unknown intent:", intent);
       }
     },
     async determineIntent() {
@@ -204,16 +218,23 @@ export default {
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
+          console.error(`HTTP error! Status: ${response.status}`);
+          this.hasError = true;
+          return;
         }
 
         const data = await response.json();
 
-        console.log("Intent:", data.intent);
+        if (!Object.values(Intent).includes(data.intent)) {
+          console.error("Unknown intent:", data.intent);
+          this.hasError = true;
+          return;
+        }
 
         return data.intent;
       } catch (error) {
         console.error("Error determining intent:", error);
+        this.hasError = true;
       }
     },
     async talk(process, selectedModel, needsToBeFinalComment) {
@@ -232,7 +253,9 @@ export default {
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
+          console.error(`HTTP error! Status: ${response.status}`);
+          this.hasError = true;
+          return;
         }
 
         // Handle the response as a stream
@@ -265,6 +288,7 @@ export default {
         return reader.read().then(processText);
       } catch (error) {
         console.error("Error responding to user query:", error);
+        this.hasError = true;
       }
     },
     async modify(process, selectedModel) {
@@ -282,7 +306,10 @@ export default {
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
+          console.error(`HTTP error! Status: ${response.status}`);
+          this.isLoading = false;
+          this.hasError = true;
+          return;
         }
 
         const data = await response.json();
@@ -295,6 +322,8 @@ export default {
         };
       } catch (error) {
         console.error("Error modifying BPMN:", error);
+        this.isLoading = false;
+        this.hasError = true;
       }
     },
     scrollToBottom() {

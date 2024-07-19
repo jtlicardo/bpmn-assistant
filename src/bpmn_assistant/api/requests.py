@@ -9,7 +9,7 @@ class BpmnToJsonRequest(BaseModel):
 
 class DetermineIntentRequest(BaseModel):
     message_history: list[MessageItem]  # The message history
-    model: str  # NOTE: the cheapest model will be used for this task
+    model: str  # The model to be used
 
 
 class ModifyBpmnRequest(BaseModel):

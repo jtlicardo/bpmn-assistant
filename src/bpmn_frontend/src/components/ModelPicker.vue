@@ -69,9 +69,8 @@ export default {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const data = await response.json();
 
-        console.log(data);
+        const data = await response.json();
 
         this.availableProviders = Object.keys(data).filter(
           (provider) => data[provider]
@@ -83,7 +82,8 @@ export default {
           this.onModelChange("claude-3-5-sonnet-20240620");
         }
       } catch (error) {
-        console.error("Error fetching available services:", error);
+        console.error("Error fetching available providers", error);
+        alert("Error fetching available providers. Is the server running?");
       }
     },
   },
