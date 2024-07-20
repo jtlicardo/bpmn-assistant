@@ -37,7 +37,7 @@ class BpmnModelingService:
             message_history=message_history_to_string(message_history)
         )
 
-        response, _ = llm_facade.call(prompt)
+        response = llm_facade.call(prompt)
 
         attempts = 0
 
@@ -56,7 +56,7 @@ class BpmnModelingService:
 
                 new_prompt = f"Error: {str(e)}. Try again."
 
-                response, _ = llm_facade.call(new_prompt)
+                response = llm_facade.call(new_prompt)
 
         raise Exception(
             "Max number of retries reached. Could not create the BPMN process."

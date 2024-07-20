@@ -26,7 +26,7 @@ def define_change_request(llm_facade: LLMFacade, message_history: list[MessageIt
         message_history=message_history_to_string(message_history),
     )
 
-    json_object, _ = llm_facade.call(prompt, max_tokens=100, temperature=0.5)
+    json_object = llm_facade.call(prompt, max_tokens=100, temperature=0.5)
 
     # TODO: validate the response, retry until it's valid
 

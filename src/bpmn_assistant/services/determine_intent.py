@@ -24,7 +24,7 @@ def determine_intent(llm_facade: LLMFacade, message_history: list[MessageItem]) 
         message_history=message_history_to_string(message_history),
     )
 
-    json_object, _ = llm_facade.call(prompt, max_tokens=50, temperature=0.3)
+    json_object = llm_facade.call(prompt, max_tokens=50, temperature=0.3)
 
     logger.info(f"Intent: {json_object}")
 

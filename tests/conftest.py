@@ -11,14 +11,14 @@ from bpmn_assistant.core.enums import Provider, AnthropicModels, OpenAIModels
 def anthropic_facade():
     load_dotenv(override=True)
     api_key = os.getenv("ANTHROPIC_API_KEY")
-    return LLMFacade(Provider.ANTHROPIC.value, api_key, AnthropicModels.HAIKU.value)
+    return LLMFacade(Provider.ANTHROPIC, api_key, AnthropicModels.HAIKU.value)
 
 
 @pytest.fixture
 def openai_facade():
     load_dotenv(override=True)
     api_key = os.getenv("OPENAI_API_KEY")
-    return LLMFacade(Provider.OPENAI.value, api_key, OpenAIModels.GPT_4O_MINI.value)
+    return LLMFacade(Provider.OPENAI, api_key, OpenAIModels.GPT_4O_MINI.value)
 
 
 @pytest.fixture

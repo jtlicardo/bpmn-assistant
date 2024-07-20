@@ -7,11 +7,11 @@ from .anthropic_provider import AnthropicProvider
 class ProviderFactory:
     @staticmethod
     def get_provider(
-        provider: str, api_key: str, output_mode: OutputMode = OutputMode.JSON, streaming: bool = False
+        provider: Provider, api_key: str, output_mode: OutputMode = OutputMode.JSON
     ) -> LLMProvider:
-        if provider == Provider.OPENAI.value:
-            return OpenAIProvider(api_key, output_mode, streaming)
-        elif provider == Provider.ANTHROPIC.value:
-            return AnthropicProvider(api_key, output_mode, streaming)
+        if provider == Provider.OPENAI:
+            return OpenAIProvider(api_key, output_mode)
+        elif provider == Provider.ANTHROPIC:
+            return AnthropicProvider(api_key, output_mode)
         else:
             raise ValueError(f"Unsupported LLM provider: {provider}")

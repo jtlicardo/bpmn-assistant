@@ -4,27 +4,24 @@ from anthropic import Anthropic
 
 from bpmn_assistant.config import logger
 from .enums import AnthropicModels, OutputMode
-from .llm_provider import LLMProvider
+from .llm_provider import LLMProvider, StreamingResponse
 
 
 class AnthropicProvider(LLMProvider):
-    def __init__(self, api_key: str, output_mode: OutputMode = OutputMode.JSON, streaming: bool = False):
+    def __init__(self, api_key: str, output_mode: OutputMode = OutputMode.JSON):
         self.api_key = api_key
         self.output_mode = output_mode
-        self.streaming = streaming
         self.client = Anthropic(api_key=self.api_key)
 
-    def call(self, model: str, messages: list, max_tokens: int, temperature: float):
+    def call(self, model: str, messages: list, max_tokens: int, temperature: float) -> str | dict:
         """
         Implementation of the Anthropic API call.
         """
-        client = Anthropic(api_key=self.api_key)
-
         if self.output_mode == OutputMode.JSON:
             # We add "{" to constrain the model to output a JSON object
             messages.append({"role": "assistant", "content": "{"})
 
-            response = client.messages.create(
+            response = self.client.messages.create(
                 model=model,
                 max_tokens=max_tokens,
                 temperature=temperature,
@@ -35,40 +32,42 @@ class AnthropicProvider(LLMProvider):
             # Remove the "{" we added from the messages
             messages.pop()
 
-            raw_output = response.content[0].text
+            raw_output = response.content[0].text # type: ignore[union-attr]
 
             # Add "{" back to the raw output to make it a valid JSON object
             raw_output = "{" + raw_output
 
-            return self._process_response(raw_output, messages)
+            return self._process_response(raw_output)
         else:
-            if self.streaming:
-                streaming_response = client.messages.stream(
-                    model=model,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    messages=messages,
-                )
-                return streaming_response, messages
-            else:
-                response = client.messages.create(
-                    model=model,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    messages=messages,
-                )
+            response = self.client.messages.create(
+                model=model,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                messages=messages,
+            )
 
-                raw_output = response.content[0].text
+            raw_output = response.content[0].text # type: ignore[union-attr]
 
-                return self._process_response(raw_output, messages)
+            return self._process_response(raw_output)
 
-    def get_initial_messages(self):
+    def stream(self, model: str, messages: list, max_tokens: int, temperature: float) -> StreamingResponse:
+        """
+        Implementation of the Anthropic API stream.
+        """
+        return self.client.messages.stream(
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            messages=messages,
+        )
+
+    def get_initial_messages(self) -> list[dict]:
         return []
 
     def check_model_compatibility(self, model: str) -> bool:
         return model in [m.value for m in AnthropicModels]
 
-    def _process_response(self, raw_output, messages) -> tuple:
+    def _process_response(self, raw_output: str) -> str | dict:
         """
         Process the raw output from the model. Returns the appropriate response based on the output mode.
         If the output mode is JSON, the raw output is parsed and returned as a JSON object.
@@ -76,18 +75,12 @@ class AnthropicProvider(LLMProvider):
         """
         if self.output_mode == OutputMode.JSON:
             try:
-                json_object = json.loads(raw_output)
-                messages.append(
-                    {"role": "assistant", "content": json.dumps(json_object)}
-                )
-                return json_object, messages
+                return json.loads(raw_output)
             except json.decoder.JSONDecodeError as e:
-                logger.error(f"JSONDecodeError, check raw_output.txt. {e}")
-                with open("raw_output.txt", "w", encoding="utf-8") as f:
-                    f.write(raw_output)
-                raise Exception("Invalid JSON response from Anthropic")
+                logger.error(f"JSONDecodeError: {e}")
+                logger.error(f"Raw output: {raw_output}")
+                raise Exception("Invalid JSON response from Anthropic") from e
         elif self.output_mode == OutputMode.TEXT:
-            messages.append({"role": "assistant", "content": raw_output})
-            return raw_output, messages
+            return raw_output
         else:
             raise ValueError(f"Unsupported output mode: {self.output_mode}")

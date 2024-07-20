@@ -75,7 +75,7 @@ class BpmnEditorService:
 
                 new_prompt = f"Error: {error_message}. Try again. Change request: {self.change_request}"
 
-                edit_proposal, _ = self.llm_facade.call(new_prompt)
+                edit_proposal = self.llm_facade.call(new_prompt)
                 logger.info(f"New edit proposal: {edit_proposal}")
 
                 if "stop" in edit_proposal:
@@ -115,7 +115,7 @@ class BpmnEditorService:
             change_request=self.change_request,
         )
 
-        response, _ = self.llm_facade.call(prompt)
+        response = self.llm_facade.call(prompt)
         logger.info(f"Initial edit proposal: {response}")
 
         attempts = 0
@@ -135,7 +135,7 @@ class BpmnEditorService:
                 new_prompt = f"Editing error: {error_message}. Please provide a new edit proposal."
 
                 # We need the call the LLM again
-                response, _ = self.llm_facade.call(new_prompt)
+                response = self.llm_facade.call(new_prompt)
                 logger.info(f"New initial edit proposal: {response}")
 
         raise Exception("Max number of retries reached.")
@@ -160,7 +160,7 @@ class BpmnEditorService:
             process=str(updated_process),
         )
 
-        response, _ = self.llm_facade.call(prompt)
+        response = self.llm_facade.call(prompt)
         logger.info(f"Intermediate edit proposal: {response}")
 
         attempts = 0
@@ -180,7 +180,7 @@ class BpmnEditorService:
                 new_prompt = f"Editing error: {error_message}. Please provide a new edit proposal."
 
                 # We need the call the LLM again
-                response, _ = self.llm_facade.call(new_prompt)
+                response = self.llm_facade.call(new_prompt)
                 logger.info(f"New intermediate edit proposal: {response}")
 
         raise Exception("Max number of retries reached.")

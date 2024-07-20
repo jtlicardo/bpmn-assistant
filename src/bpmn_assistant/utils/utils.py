@@ -31,14 +31,13 @@ def prepare_prompt(prompt_template, **kwargs):
 
 
 def get_llm_facade(
-        model: str, output_mode: OutputMode = OutputMode.JSON, streaming: bool = False
+        model: str, output_mode: OutputMode = OutputMode.JSON
 ) -> LLMFacade:
     """
     Get the LLM facade based on the model type
     Args:
         model: The model to use
         output_mode: The output mode for the LLM response (JSON or text)
-        streaming: Whether to use streaming or not.
     Returns:
         LLMFacade: The LLM facade
     """
@@ -46,10 +45,10 @@ def get_llm_facade(
 
     if is_openai_model(model):
         api_key = os.getenv("OPENAI_API_KEY")
-        provider = Provider.OPENAI.value
+        provider = Provider.OPENAI
     elif is_anthropic_model(model):
         api_key = os.getenv("ANTHROPIC_API_KEY")
-        provider = Provider.ANTHROPIC.value
+        provider = Provider.ANTHROPIC
     else:
         raise Exception("Invalid model")
 
@@ -58,7 +57,6 @@ def get_llm_facade(
         api_key,
         model,
         output_mode=output_mode,
-        streaming=streaming,
     )
 
 

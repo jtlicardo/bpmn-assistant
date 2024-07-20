@@ -18,7 +18,7 @@ class ConversationalService:
 
     def __init__(self, model: str):
         self.provider = get_provider_based_on_model(model)
-        self.llm_facade = get_llm_facade(model, output_mode=OutputMode.TEXT, streaming=True)
+        self.llm_facade = get_llm_facade(model, output_mode=OutputMode.TEXT)
 
     def respond_to_query(
         self, message_history: list[MessageItem], process: Optional[list]
@@ -52,7 +52,7 @@ class ConversationalService:
                 process=str(process),
             )
 
-        response, _ = self.llm_facade.call(prompt, max_tokens=500, temperature=0.5)
+        response = self.llm_facade.stream(prompt, max_tokens=500, temperature=0.5)
 
         yield from self._process_streaming_response(response)
 
@@ -76,7 +76,7 @@ class ConversationalService:
             process=str(process),
         )
 
-        response, _ = self.llm_facade.call(prompt, max_tokens=200, temperature=0.5)
+        response = self.llm_facade.stream(prompt, max_tokens=200, temperature=0.5)
 
         yield from self._process_streaming_response(response)
 
