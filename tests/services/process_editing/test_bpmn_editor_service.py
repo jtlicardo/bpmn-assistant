@@ -14,14 +14,11 @@ class TestEditBpmn:
 
         # Define the return values for each call
         mock_llm_facade.call.side_effect = [
-            (
-                {
-                    "function": "delete_element",
-                    "arguments": {"element_id": "exclusive1"},
-                },
-                None,
-            ),
-            ({"stop": True}, None),
+            {
+                "function": "delete_element",
+                "arguments": {"element_id": "exclusive1"},
+            },
+            {"stop": True},
         ]
 
         change_request = (

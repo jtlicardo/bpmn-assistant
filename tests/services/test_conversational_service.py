@@ -31,8 +31,14 @@ class TestConversationalService:
 
         message_history = [
             MessageItem(role="user", content="Can you help me create a BPMN process?"),
-            MessageItem(role="assistant", content="Sure! What are the steps involved in the process?"),
-            MessageItem(role="user", content="Just a simple process with a start event, some tasks, and an end event."),
+            MessageItem(
+                role="assistant",
+                content="Sure! What are the steps involved in the process?",
+            ),
+            MessageItem(
+                role="user",
+                content="Just a simple process with a start event, some tasks, and an end event.",
+            ),
         ]
 
         response_generator = service.make_final_comment(

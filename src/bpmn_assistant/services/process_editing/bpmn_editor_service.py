@@ -1,5 +1,6 @@
 from importlib import resources
 
+from bpmn_assistant.config import logger
 from bpmn_assistant.core import LLMFacade
 from bpmn_assistant.core.exceptions import ProcessException
 from bpmn_assistant.services.process_editing import (
@@ -10,7 +11,6 @@ from bpmn_assistant.services.process_editing import (
     update_element,
 )
 from bpmn_assistant.utils import prepare_prompt
-from bpmn_assistant.config import logger
 
 
 class BpmnEditorService:

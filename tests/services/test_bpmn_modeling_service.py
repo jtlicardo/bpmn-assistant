@@ -35,7 +35,7 @@ class TestCreateBpmn:
             ]
         }
 
-        mock_llm_facade.call.return_value = (invalid_process, None)
+        mock_llm_facade.call.return_value = invalid_process
 
         with pytest.raises(Exception) as e:
             bpmn_service.create_bpmn(mock_llm_facade, [])
@@ -83,7 +83,7 @@ class TestCreateBpmn:
             ]
         }
 
-        mock_llm_facade.call.return_value = (invalid_process, None)
+        mock_llm_facade.call.return_value = invalid_process
 
         with pytest.raises(Exception) as e:
             bpmn_service.create_bpmn(mock_llm_facade, [])
