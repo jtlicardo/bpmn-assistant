@@ -8,18 +8,22 @@ from .llm_provider import LLMProvider, StreamingResponse
 
 
 class OpenAIProvider(LLMProvider):
-    def __init__(
-        self, api_key: str, output_mode: OutputMode = OutputMode.JSON
-    ):
+    def __init__(self, api_key: str, output_mode: OutputMode = OutputMode.JSON):
         self.api_key = api_key
         self.output_mode = output_mode
         self.client = OpenAI(api_key=self.api_key)
 
-    def call(self, model: str, messages: list, max_tokens: int, temperature: float) -> str | dict:
+    def call(
+        self, model: str, messages: list, max_tokens: int, temperature: float
+    ) -> str | dict:
         """
         Implementation of the OpenAI API call.
         """
-        response_format = {"type": "json_object"} if self.output_mode == OutputMode.JSON else {"type": "text"}
+        response_format = (
+            {"type": "json_object"}
+            if self.output_mode == OutputMode.JSON
+            else {"type": "text"}
+        )
 
         response = self.client.chat.completions.create(
             model=model,
@@ -33,7 +37,9 @@ class OpenAIProvider(LLMProvider):
 
         return self._process_response(raw_output)
 
-    def stream(self, model: str, messages: list, max_tokens: int, temperature: float) -> StreamingResponse:
+    def stream(
+        self, model: str, messages: list, max_tokens: int, temperature: float
+    ) -> StreamingResponse:
         """
         Implementation of the OpenAI API stream.
         """

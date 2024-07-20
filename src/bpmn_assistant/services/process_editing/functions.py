@@ -1,6 +1,5 @@
 import copy
 
-from .helpers import find_position, get_all_ids
 from bpmn_assistant.core.exceptions import (
     ElementNotFoundException,
     OnlyElementDeletionError,
@@ -9,6 +8,7 @@ from bpmn_assistant.core.exceptions import (
     InvalidEndElementError,
     GatewayUpdateError,
 )
+from .helpers import find_position, get_all_ids
 
 
 def delete_element(process: list, element_id: str) -> dict:

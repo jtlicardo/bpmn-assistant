@@ -3,7 +3,12 @@ import os
 from dotenv import load_dotenv
 
 from bpmn_assistant.core import LLMFacade, MessageItem
-from bpmn_assistant.core.enums import Provider, OpenAIModels, AnthropicModels, OutputMode
+from bpmn_assistant.core.enums import (
+    Provider,
+    OpenAIModels,
+    AnthropicModels,
+    OutputMode,
+)
 
 
 def prepare_prompt(prompt_template, **kwargs):
@@ -30,9 +35,7 @@ def prepare_prompt(prompt_template, **kwargs):
     return prompt
 
 
-def get_llm_facade(
-        model: str, output_mode: OutputMode = OutputMode.JSON
-) -> LLMFacade:
+def get_llm_facade(model: str, output_mode: OutputMode = OutputMode.JSON) -> LLMFacade:
     """
     Get the LLM facade based on the model type
     Args:

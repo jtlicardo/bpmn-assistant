@@ -10,7 +10,8 @@ from bpmn_assistant.core.enums import Provider, OutputMode
 from bpmn_assistant.utils import (
     prepare_prompt,
     get_provider_based_on_model,
-    get_llm_facade, message_history_to_string,
+    get_llm_facade,
+    message_history_to_string,
 )
 
 
@@ -56,7 +57,9 @@ class ConversationalService:
 
         yield from self._process_streaming_response(response)
 
-    def make_final_comment(self, message_history: list[MessageItem], process: list) -> Generator:
+    def make_final_comment(
+        self, message_history: list[MessageItem], process: list
+    ) -> Generator:
         """
         Make a final comment after the process is created/edited.
         Args:

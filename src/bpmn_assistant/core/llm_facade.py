@@ -1,9 +1,9 @@
 import json
 
+from bpmn_assistant.config import logger
 from bpmn_assistant.core.enums import OutputMode, Provider
 from bpmn_assistant.core.llm_provider import LLMProvider, StreamingResponse
 from bpmn_assistant.core.provider_factory import ProviderFactory
-from bpmn_assistant.config import logger
 
 
 class LLMFacade:
@@ -43,7 +43,9 @@ class LLMFacade:
 
         self.messages.append({"role": "user", "content": prompt})
 
-        response = self.provider.call(self.model, self.messages, max_tokens, temperature)
+        response = self.provider.call(
+            self.model, self.messages, max_tokens, temperature
+        )
 
         # Append the response to the message history in case the JSON is invalid and
         # we need to re-run the call

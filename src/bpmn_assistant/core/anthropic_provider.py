@@ -13,7 +13,9 @@ class AnthropicProvider(LLMProvider):
         self.output_mode = output_mode
         self.client = Anthropic(api_key=self.api_key)
 
-    def call(self, model: str, messages: list, max_tokens: int, temperature: float) -> str | dict:
+    def call(
+        self, model: str, messages: list, max_tokens: int, temperature: float
+    ) -> str | dict:
         """
         Implementation of the Anthropic API call.
         """
@@ -32,7 +34,7 @@ class AnthropicProvider(LLMProvider):
             # Remove the "{" we added from the messages
             messages.pop()
 
-            raw_output = response.content[0].text # type: ignore[union-attr]
+            raw_output = response.content[0].text  # type: ignore[union-attr]
 
             # Add "{" back to the raw output to make it a valid JSON object
             raw_output = "{" + raw_output
@@ -46,11 +48,13 @@ class AnthropicProvider(LLMProvider):
                 messages=messages,
             )
 
-            raw_output = response.content[0].text # type: ignore[union-attr]
+            raw_output = response.content[0].text  # type: ignore[union-attr]
 
             return self._process_response(raw_output)
 
-    def stream(self, model: str, messages: list, max_tokens: int, temperature: float) -> StreamingResponse:
+    def stream(
+        self, model: str, messages: list, max_tokens: int, temperature: float
+    ) -> StreamingResponse:
         """
         Implementation of the Anthropic API stream.
         """

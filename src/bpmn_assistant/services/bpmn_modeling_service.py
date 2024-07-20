@@ -1,6 +1,6 @@
+import traceback
 from importlib import resources
 from typing import Optional
-import traceback
 
 from bpmn_assistant.config import logger
 from bpmn_assistant.core import LLMFacade, MessageItem
@@ -33,8 +33,7 @@ class BpmnModelingService:
         )
 
         prompt = prepare_prompt(
-            prompt_template,
-            message_history=message_history_to_string(message_history)
+            prompt_template, message_history=message_history_to_string(message_history)
         )
 
         response = llm_facade.call(prompt)
@@ -121,7 +120,11 @@ class BpmnModelingService:
                 f"Unsupported element type: {element['type']}. Supported types: {supported_elements}"
             )
 
-        if parent_gateway is not None and "next" in element and element["next"] == parent_gateway["id"]:
+        if (
+            parent_gateway is not None
+            and "next" in element
+            and element["next"] == parent_gateway["id"]
+        ):
             raise Exception(
                 f"Element {element['id']} cannot point back to its parent gateway {parent_gateway['id']}"
             )
