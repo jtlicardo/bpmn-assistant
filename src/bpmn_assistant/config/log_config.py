@@ -12,7 +12,7 @@ class CustomFormatter(logging.Formatter):
         logging.CRITICAL: "[CRITICAL]: %(asctime)s.%(msecs)03d %(filename)s:%(lineno)d - %(message)s",
     }
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         log_fmt = self.FORMATS.get(record.levelno, self.FORMATS[logging.INFO])
         self._style._fmt = log_fmt
         self.datefmt = "%Y-%m-%d %H:%M:%S"
