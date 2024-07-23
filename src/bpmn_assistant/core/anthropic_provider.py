@@ -1,10 +1,12 @@
 import json
+from typing import Generator, Any
 
 from anthropic import Anthropic
+from anthropic.types import TextBlock
 
 from bpmn_assistant.config import logger
 from .enums import AnthropicModels, OutputMode
-from .llm_provider import LLMProvider, StreamingResponse
+from .llm_provider import LLMProvider
 
 
 class AnthropicProvider(LLMProvider):
@@ -14,8 +16,12 @@ class AnthropicProvider(LLMProvider):
         self.client = Anthropic(api_key=self.api_key)
 
     def call(
-        self, model: str, messages: list, max_tokens: int, temperature: float
-    ) -> str | dict:
+        self,
+        model: str,
+        messages: list[dict[str, str]],
+        max_tokens: int,
+        temperature: float,
+    ) -> str | dict[str, Any]:
         """
         Implementation of the Anthropic API call.
         """
@@ -28,13 +34,16 @@ class AnthropicProvider(LLMProvider):
                 max_tokens=max_tokens,
                 temperature=temperature,
                 system="You are a helpful assistant designed to output JSON.",
-                messages=messages,
+                messages=messages,  # type: ignore[arg-type]
             )
+
+            if not isinstance(response.content, TextBlock):
+                raise Exception("Invalid JSON response from Anthropic")
 
             # Remove the "{" we added from the messages
             messages.pop()
 
-            raw_output = response.content[0].text  # type: ignore[union-attr]
+            raw_output = response.content[0].text
 
             # Add "{" back to the raw output to make it a valid JSON object
             raw_output = "{" + raw_output
@@ -45,33 +54,44 @@ class AnthropicProvider(LLMProvider):
                 model=model,
                 max_tokens=max_tokens,
                 temperature=temperature,
-                messages=messages,
+                messages=messages,  # type: ignore[arg-type]
             )
 
-            raw_output = response.content[0].text  # type: ignore[union-attr]
+            if not isinstance(response.content, TextBlock):
+                raise Exception("Invalid JSON response from Anthropic")
+
+            raw_output = response.content[0].text
 
             return self._process_response(raw_output)
 
     def stream(
-        self, model: str, messages: list, max_tokens: int, temperature: float
-    ) -> StreamingResponse:
+        self,
+        model: str,
+        messages: list[dict[str, str]],
+        max_tokens: int,
+        temperature: float,
+    ) -> Generator[str, None, None]:
         """
         Implementation of the Anthropic API stream.
         """
-        return self.client.messages.stream(
+        response = self.client.messages.stream(
             model=model,
             max_tokens=max_tokens,
             temperature=temperature,
-            messages=messages,
+            messages=messages,  # type: ignore[arg-type]
         )
 
-    def get_initial_messages(self) -> list[dict]:
+        with response as stream:
+            for text in stream.text_stream:
+                yield text
+
+    def get_initial_messages(self) -> list[dict[str, str]]:
         return []
 
     def check_model_compatibility(self, model: str) -> bool:
         return model in [m.value for m in AnthropicModels]
 
-    def _process_response(self, raw_output: str) -> str | dict:
+    def _process_response(self, raw_output: str) -> str | dict[str, Any]:
         """
         Process the raw output from the model. Returns the appropriate response based on the output mode.
         If the output mode is JSON, the raw output is parsed and returned as a JSON object.
@@ -79,7 +99,12 @@ class AnthropicProvider(LLMProvider):
         """
         if self.output_mode == OutputMode.JSON:
             try:
-                return json.loads(raw_output)
+                result = json.loads(raw_output)
+
+                if not isinstance(result, dict):
+                    raise ValueError(f"Invalid JSON response from Anthropic: {result}")
+
+                return result
             except json.decoder.JSONDecodeError as e:
                 logger.error(f"JSONDecodeError: {e}")
                 logger.error(f"Raw output: {raw_output}")

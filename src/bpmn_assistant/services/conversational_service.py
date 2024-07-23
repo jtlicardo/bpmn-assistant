@@ -1,12 +1,8 @@
 from importlib import resources
 from typing import Optional, Generator
 
-from anthropic import MessageStreamManager
-from openai import Stream
-from openai.types.chat import ChatCompletionChunk
-
 from bpmn_assistant.core import MessageItem
-from bpmn_assistant.core.enums import Provider, OutputMode
+from bpmn_assistant.core.enums import OutputMode
 from bpmn_assistant.utils import (
     prepare_prompt,
     get_provider_based_on_model,
@@ -53,9 +49,7 @@ class ConversationalService:
                 process=str(process),
             )
 
-        response = self.llm_facade.stream(prompt, max_tokens=500, temperature=0.5)
-
-        yield from self._process_streaming_response(response)
+        yield from self.llm_facade.stream(prompt, max_tokens=500, temperature=0.5)
 
     def make_final_comment(
         self, message_history: list[MessageItem], process: list
@@ -79,20 +73,4 @@ class ConversationalService:
             process=str(process),
         )
 
-        response = self.llm_facade.stream(prompt, max_tokens=200, temperature=0.5)
-
-        yield from self._process_streaming_response(response)
-
-    def _process_streaming_response(
-        self, response: Stream[ChatCompletionChunk] | MessageStreamManager
-    ) -> Generator:
-        if self.provider == Provider.OPENAI:
-            for chunk in response:
-                if chunk.choices[0].delta.content is not None:
-                    yield chunk.choices[0].delta.content
-        elif self.provider == Provider.ANTHROPIC:
-            with response as stream:
-                for text in stream.text_stream:
-                    yield text
-        else:
-            raise Exception("Invalid provider")
+        yield from self.llm_facade.stream(prompt, max_tokens=200, temperature=0.5)

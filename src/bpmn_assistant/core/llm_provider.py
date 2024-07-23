@@ -1,27 +1,30 @@
 from abc import ABC, abstractmethod
-
-from anthropic import MessageStreamManager
-from openai import Stream
-from openai.types.chat import ChatCompletionChunk
-
-type StreamingResponse = Stream[ChatCompletionChunk] | MessageStreamManager
+from typing import Generator, Any
 
 
 class LLMProvider(ABC):
     @abstractmethod
     def call(
-        self, model: str, messages: list, max_tokens: int, temperature: float
-    ) -> str | dict:
+        self,
+        model: str,
+        messages: list[dict[str, str]],
+        max_tokens: int,
+        temperature: float,
+    ) -> str | dict[str, Any]:
         pass
 
     @abstractmethod
     def stream(
-        self, model: str, messages: list, max_tokens: int, temperature: float
-    ) -> StreamingResponse:
+        self,
+        model: str,
+        messages: list[dict[str, str]],
+        max_tokens: int,
+        temperature: float,
+    ) -> Generator[str, None, None]:
         pass
 
     @abstractmethod
-    def get_initial_messages(self) -> list[dict]:
+    def get_initial_messages(self) -> list[dict[str, str]]:
         pass
 
     @abstractmethod

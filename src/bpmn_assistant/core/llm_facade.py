@@ -1,8 +1,9 @@
 import json
+from typing import Generator, Any
 
 from bpmn_assistant.config import logger
 from bpmn_assistant.core.enums import OutputMode, Provider
-from bpmn_assistant.core.llm_provider import LLMProvider, StreamingResponse
+from bpmn_assistant.core.llm_provider import LLMProvider
 from bpmn_assistant.core.provider_factory import ProviderFactory
 
 
@@ -35,7 +36,7 @@ class LLMFacade:
 
     def call(
         self, prompt: str, max_tokens: int = 1000, temperature: float = 0.3
-    ) -> str | dict:
+    ) -> str | dict[str, Any]:
         """
         Call the LLM model with the given prompt.
         """
@@ -56,7 +57,7 @@ class LLMFacade:
 
     def stream(
         self, prompt: str, max_tokens: int = 1000, temperature: float = 0.3
-    ) -> StreamingResponse:
+    ) -> Generator[str, None, None]:
         """
         Call the LLM model with the given prompt and stream the response.
         """
