@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 from bpmn_assistant.core import LLMFacade, MessageItem
 from bpmn_assistant.core.enums import Provider, AnthropicModels, OpenAIModels
+from tests.fixtures.bpmn_loader import load_bpmn
 
 
 @pytest.fixture
@@ -178,11 +179,14 @@ def linear_process_fixture():
         {"type": "endEvent", "id": "end1", "next": None},
     ]
 
+
 def dict_to_message_item(message_dict):
     return MessageItem(**message_dict)
 
+
 def convert_message_history(message_history):
     return [dict_to_message_item(message) for message in message_history]
+
 
 @pytest.fixture
 def message_history_create_bpmn():
@@ -269,3 +273,35 @@ def message_history_explain_process():
     ]
 
     return convert_message_history(message_history)
+
+
+@pytest.fixture
+def bpmn_xml_linear_process():
+    """
+    Description: A BPMN XML string that represents a linear process.
+    """
+    return load_bpmn("linear_process.bpmn")
+
+
+@pytest.fixture
+def bpmn_xml_exclusive_gateway():
+    """
+    Description: A BPMN XML string that represents a process with an exclusive gateway.
+    """
+    return load_bpmn("exclusive_gateway.bpmn")
+
+
+@pytest.fixture
+def bpmn_xml_nested_exclusive_gateway():
+    """
+    Description: A BPMN XML string that represents a process with a nested exclusive gateway.
+    """
+    return load_bpmn("nested_exclusive_gateway.bpmn")
+
+
+@pytest.fixture
+def bpmn_xml_parallel_gateway():
+    """
+    Description: A BPMN XML string that represents a process with a parallel gateway.
+    """
+    return load_bpmn("parallel_gateway.bpmn")
