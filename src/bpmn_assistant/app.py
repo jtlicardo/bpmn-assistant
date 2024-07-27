@@ -2,6 +2,12 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from bpmn_assistant.api.requests import (
+    BpmnToJsonRequest,
+    DetermineIntentRequest,
+    ModifyBpmnRequest,
+    ConversationalRequest,
+)
 from bpmn_assistant.config import logger
 from bpmn_assistant.services import (
     BpmnModelingService,
@@ -12,12 +18,6 @@ from bpmn_assistant.services import (
 from bpmn_assistant.utils import (
     get_llm_facade,
     get_available_providers,
-)
-from bpmn_assistant.api.requests import (
-    BpmnToJsonRequest,
-    DetermineIntentRequest,
-    ModifyBpmnRequest,
-    ConversationalRequest,
 )
 
 app = FastAPI()
@@ -36,6 +36,9 @@ bpmn_xml_generator = BpmnXmlGenerator()
 
 @app.post("/bpmn_to_json")
 def _bpmn_to_json(request: BpmnToJsonRequest) -> JSONResponse:
+    """
+    Convert the BPMN XML to its JSON representation
+    """
     pass
 
 
