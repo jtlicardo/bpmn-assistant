@@ -2,15 +2,24 @@
 
 ## Tasks
 
-Specify the task type in the 'type' field.
-Only "task", "userTask" and "serviceTask" options are supported.
+Specify the task type in the 'type' field. Only "task", "userTask" and "serviceTask" options are supported.
 
 ```json
 {
     "type": String = "task" | "userTask" | "serviceTask"
     "id": String,
     "label": String, // short task description
-    "next": String // id of the next element
+}
+```
+
+## Events
+
+Specify the event type in the 'type' field. Only "startEvent" and "endEvent" options are supported.
+
+```json
+{
+    "type": String = "startEvent" | "endEvent",
+    "id": String,
 }
 ```
 
@@ -18,26 +27,33 @@ Only "task", "userTask" and "serviceTask" options are supported.
 
 ### Exclusive gateway
 
+Each branch has a condition and a path of elements that are executed if the condition is met.
+If the branch does not lead to the next element in the process (for example, it goes back to a previous element), specify the next element id.
+If the branch leads to the next element in the process, do not specify the next element id.
+
 ```json
 {
     "type": String = "exclusiveGateway",
     "id": String,
     "label": String, // label for the gateway (e.g. "Professor agrees?")
+    "has_join": Boolean, // whether the gateway contains a join element that merges the branches
     "branches": [
         {
             "condition": String, // condition for the branch
-            "path": [] // array of elements that are executed if the condition is met
+            "path": [], // array of elements that are executed if the condition is met (can be empty)
+            "next": String, // OPTIONAL: if the branch does not lead to the next element in the process, specify the next element id
         },
         {
-            "condition": String, // condition for the branch
-            "path": [] // array of elements that are executed if the condition is met
+            "condition": String,
+            "path": [],
+            "next": String, // OPTIONAL
         },
-        ...
-    ]
+        // ... more branches
+    ],
 }
 ```
 
-### Parallel gateway (fork)
+### Parallel gateway
 
 ```json
 {
@@ -46,43 +62,12 @@ Only "task", "userTask" and "serviceTask" options are supported.
     "branches": [
         [], // array of elements that are executed in parallel with the next array
         [], // array of elements that are executed in parallel with the previous array
-        ...
-    ]
+        // ... more arrays
+    ],
 }
 ```
 
-### Parallel gateway (join)
-
-```json
-{
-    "type": String = "parallelGateway",
-    "id": String,
-    "next": String // id of the next element
-}
-
-## Events
-
-### Start event
-
-```json
-{
-    "type": String = "startEvent",
-    "id": String,
-    "next": String // id of the next element
-}
-```
-
-### End event
-
-```json
-{
-    "type": String = "endEvent",
-    "id": String,
-    "next": null
-}
-```
-
-# Examples
+# Process examples
 
 Textual description:
 "The student sends an email to the professor. The professor receives the email. If the professor agrees with the proposal, he replies to the student."
@@ -93,24 +78,22 @@ Textual description:
         {
             "type": "startEvent",
             "id": "start1",
-            "next": "task1"
         },
         {
             "type": "userTask",
             "id": "task1",
             "label": "Send email to professor",
-            "next": "task2"
         },
         {
             "type": "task",
             "id": "task2",
             "label": "Receive the email",
-            "next": "exclusive1"
         },
         {
             "type": "exclusiveGateway",
             "id": "exclusive1",
             "label": "Professor agrees?",
+            "has_join": true,
             "branches": [
                 {
                     "condition": "If the professor agrees",
@@ -119,21 +102,18 @@ Textual description:
                             "type": "task",
                             "id": "task3",
                             "label": "Reply to the student",
-                            "next": "end1"
                         }
                     ]
                 },
                 {
                     "condition": "If the professor does not agree",
-                    "path": [
-                        {
-                            "type": "endEvent",
-                            "id": "end1",
-                            "next": null
-                        }
-                    ]
+                    "path": []
                 }
             ]
+        },
+        {
+            "type": "endEvent",
+            "id": "end1",
         }
     ]
 }
@@ -150,7 +130,6 @@ Textual description:
         {
             "type": "startEvent",
             "id": "start1",
-            "next": "parallel1"
         },
         {
             "type": "parallelGateway",
@@ -161,13 +140,11 @@ Textual description:
                         "type": "serviceTask",
                         "id": "task1",
                         "label": "Send mail to supplier",
-                        "next": "task2"
                     },
                     {
                         "type": "task",
                         "id": "task2",
                         "label": "Prepare the documents",
-                        "next": "join1"
                     }
                 ],
                 [
@@ -175,26 +152,18 @@ Textual description:
                         "type": "task",
                         "id": "task3",
                         "label": "Search for the goods",
-                        "next": "task4"
                     },
                     {
                         "type": "task",
                         "id": "task4",
                         "label": "Pick up the goods",
-                        "next": "join1"
                     }
                 ]
             ]
         },
         {
-            "type": "parallelGateway",
-            "id": "join1",
-            "next": "end1"
-        },
-        {
             "type": "endEvent",
             "id": "end1",
-            "next": null
         }
     ]
 }
@@ -211,12 +180,12 @@ Textual description: "The process starts with a decision. If Option A is selecte
     {
       "type": "startEvent",
       "id": "start",
-      "next": "gateway1"
     },
     {
       "type": "exclusiveGateway",
       "id": "gateway1",
       "label": "Main Decision",
+      "has_join": false,
       "branches": [
         {
           "condition": "Option A",
@@ -225,12 +194,12 @@ Textual description: "The process starts with a decision. If Option A is selecte
               "type": "task",
               "id": "taskA",
               "label": "Perform Task A",
-              "next": "gateway2"
             },
             {
               "type": "exclusiveGateway",
               "id": "gateway2",
               "label": "Nested Decision",
+              "has_join": false,
               "branches": [
                 {
                   "condition": "Sub-option 1",
@@ -239,9 +208,8 @@ Textual description: "The process starts with a decision. If Option A is selecte
                       "type": "task",
                       "id": "taskA1",
                       "label": "Perform Task A1",
-                      "next": "end"
                     }
-                  ]
+                  ],
                 },
                 {
                   "condition": "Sub-option 2",
@@ -250,13 +218,12 @@ Textual description: "The process starts with a decision. If Option A is selecte
                       "type": "task",
                       "id": "taskA2",
                       "label": "Perform Task A2",
-                      "next": "end"
                     }
-                  ]
+                  ],
                 }
               ]
             }
-          ]
+          ],
         },
         {
           "condition": "Option B",
@@ -265,16 +232,14 @@ Textual description: "The process starts with a decision. If Option A is selecte
               "type": "task",
               "id": "taskB",
               "label": "Perform Task B",
-              "next": "end"
             }
-          ]
+          ],
         }
       ]
     },
     {
       "type": "endEvent",
       "id": "end",
-      "next": null
     }
   ]
 }
