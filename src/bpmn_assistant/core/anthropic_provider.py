@@ -37,13 +37,15 @@ class AnthropicProvider(LLMProvider):
                 messages=messages,  # type: ignore[arg-type]
             )
 
-            if not isinstance(response.content, TextBlock):
-                raise Exception("Invalid JSON response from Anthropic")
+            content = response.content[0]
+
+            if not isinstance(content, TextBlock):
+                raise ValueError(f"Invalid response from Anthropic: {content}")
 
             # Remove the "{" we added from the messages
             messages.pop()
 
-            raw_output = response.content[0].text
+            raw_output = content.text
 
             # Add "{" back to the raw output to make it a valid JSON object
             raw_output = "{" + raw_output
@@ -57,10 +59,12 @@ class AnthropicProvider(LLMProvider):
                 messages=messages,  # type: ignore[arg-type]
             )
 
-            if not isinstance(response.content, TextBlock):
-                raise Exception("Invalid JSON response from Anthropic")
+            content = response.content[0]
 
-            raw_output = response.content[0].text
+            if not isinstance(content, TextBlock):
+                raise ValueError(f"Invalid response from Anthropic: {content}")
+
+            raw_output = content.text
 
             return self._process_response(raw_output)
 
