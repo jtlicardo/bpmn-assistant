@@ -36,26 +36,34 @@ class BpmnModelingService:
             prompt_template, message_history=message_history_to_string(message_history)
         )
 
-        response = llm_facade.call(prompt)
-
         attempts = 0
 
         while attempts < max_retries:
             attempts += 1
+            response = None
 
             try:
+                response = llm_facade.call(prompt)
                 self._validate_bpmn(response["process"], None)
                 return response["process"]  # Return the process if it's valid
             except Exception as e:
+                error_type = (
+                    "LLM call failed" if response is None else "Invalid process"
+                )
+
+                process_info = (
+                    "N/A"
+                    if response is None
+                    else response.get("process", "No process in response")
+                )
+
                 logger.warning(
                     f"Validation error (attempt {attempts}): {str(e)}\n"
-                    f"Invalid process: {response['process']}\n"
+                    f"{error_type}: {process_info}\n"
                     f"Traceback: {traceback.format_exc()}"
                 )
 
-                new_prompt = f"Error: {str(e)}. Try again."
-
-                response = llm_facade.call(new_prompt)
+                prompt = f"Error: {str(e)}. Try again."
 
         raise Exception(
             "Max number of retries reached. Could not create the BPMN process."

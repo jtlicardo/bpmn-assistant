@@ -37,7 +37,7 @@ class AnthropicProvider(LLMProvider):
                 messages=messages,  # type: ignore[arg-type]
             )
 
-            if not isinstance(response.content, TextBlock):
+            if not isinstance(response.content[0], TextBlock):
                 raise Exception("Invalid JSON response from Anthropic")
 
             # Remove the "{" we added from the messages
@@ -57,7 +57,7 @@ class AnthropicProvider(LLMProvider):
                 messages=messages,  # type: ignore[arg-type]
             )
 
-            if not isinstance(response.content, TextBlock):
+            if not isinstance(response.content[0], TextBlock):
                 raise Exception("Invalid JSON response from Anthropic")
 
             raw_output = response.content[0].text
