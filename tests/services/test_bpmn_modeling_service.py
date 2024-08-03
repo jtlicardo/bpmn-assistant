@@ -41,7 +41,7 @@ class TestCreateBpmn:
             bpmn_service.create_bpmn(mock_llm_facade, [])
 
         assert "Max number of retries reached" in str(e.value)
-        assert mock_llm_facade.call.call_count == 4
+        assert mock_llm_facade.call.call_count == 3
 
     def test_create_bpmn_raises_exception_if_element_points_to_parent_gateway(self):
         bpmn_service = BpmnModelingService()
@@ -89,4 +89,4 @@ class TestCreateBpmn:
             bpmn_service.create_bpmn(mock_llm_facade, [])
 
         assert "Max number of retries reached" in str(e.value)
-        assert mock_llm_facade.call.call_count == 4
+        assert mock_llm_facade.call.call_count == 3
