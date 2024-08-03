@@ -12,6 +12,9 @@ from bpmn_assistant.utils import prepare_prompt, message_history_to_string
 
 
 class BpmnModelingService:
+    """
+    Service for creating and editing BPMN processes.
+    """
 
     def create_bpmn(
         self,
