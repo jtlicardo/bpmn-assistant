@@ -2,6 +2,9 @@ import xml.etree.ElementTree as ET
 
 
 class BpmnXmlGenerator:
+    """
+    Class to generate BPMN XML from the BPMN process data in JSON format.
+    """
 
     def create_bpmn_xml(self, process: list[dict]) -> str:
         """
@@ -121,7 +124,7 @@ class BpmnXmlGenerator:
                     }
                 )
 
-        for element in process:
+        for index, element in enumerate(process):
             # For now we won't bother with the incoming and outgoing flows
             elements.append(
                 {
@@ -133,15 +136,16 @@ class BpmnXmlGenerator:
 
             if element["type"] == "exclusiveGateway":
                 handle_exclusive_gateway(element)
-            elif element["type"] == "parallelGateway" and "branches" in element:
-                # Fork parallel gateway (joins don't need to be handled)
+            elif element["type"] == "parallelGateway":
                 handle_parallel_gateway(element)
-            elif "next" in element and element["next"]:
+
+            # Add the flow between the current element and the next element in the process
+            if index < len(process) - 1:
                 flows.append(
                     {
-                        "id": f"{element['id']}-{element['next']}",
+                        "id": f"{element['id']}-{process[index + 1]['id']}",
                         "sourceRef": element["id"],
-                        "targetRef": element["next"],
+                        "targetRef": process[index + 1]["id"],
                         "condition": None,
                     }
                 )
