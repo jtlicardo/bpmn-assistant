@@ -108,6 +108,16 @@ class BpmnXmlGenerator:
                 )
 
         def handle_parallel_gateway(element: dict):
+            # Create a 'join' parallel gateway element
+            join_gateway_id = f"{element['id']}-join"
+            elements.append(
+                {
+                    "id": join_gateway_id,
+                    "type": "parallelGateway",
+                    "label": None,
+                }
+            )
+
             for branch in element["branches"]:
                 branch_structure = self._restructure(branch)
                 elements.extend(branch_structure["elements"])
@@ -124,6 +134,19 @@ class BpmnXmlGenerator:
                     }
                 )
 
+                # Add the flow from the last element in the branch to the join gateway
+                last_element = branch_structure["elements"][-1]
+                flows.append(
+                    {
+                        "id": f"{last_element['id']}-{join_gateway_id}",
+                        "sourceRef": last_element["id"],
+                        "targetRef": join_gateway_id,
+                        "condition": None,
+                    }
+                )
+
+            return join_gateway_id
+
         for index, element in enumerate(process):
             # For now we won't bother with the incoming and outgoing flows
             elements.append(
@@ -137,18 +160,29 @@ class BpmnXmlGenerator:
             if element["type"] == "exclusiveGateway":
                 handle_exclusive_gateway(element)
             elif element["type"] == "parallelGateway":
-                handle_parallel_gateway(element)
+                join_gateway_id = handle_parallel_gateway(element)
 
-            # Add the flow between the current element and the next element in the process
-            if index < len(process) - 1:
-                flows.append(
-                    {
-                        "id": f"{element['id']}-{process[index + 1]['id']}",
-                        "sourceRef": element["id"],
-                        "targetRef": process[index + 1]["id"],
-                        "condition": None,
-                    }
-                )
+                # Connect the join gateway to the next element in the process
+                if index < len(process) - 1:
+                    flows.append(
+                        {
+                            "id": f"{join_gateway_id}-{process[index + 1]['id']}",
+                            "sourceRef": join_gateway_id,
+                            "targetRef": process[index + 1]["id"],
+                            "condition": None,
+                        }
+                    )
+            else:
+                # Add the flow between the current element and the next element in the process
+                if index < len(process) - 1:
+                    flows.append(
+                        {
+                            "id": f"{element['id']}-{process[index + 1]['id']}",
+                            "sourceRef": element["id"],
+                            "targetRef": process[index + 1]["id"],
+                            "condition": None,
+                        }
+                    )
 
         # Loop through the elements and flows to find the incoming and outgoing flows
         for element in elements:
