@@ -168,6 +168,61 @@ def linear_process_fixture():
     ]
 
 
+@pytest.fixture
+def pg_inside_eg_fixture():
+    """
+    Description: A process that includes an exclusive gateway, with one of the
+    branches containing a parallel gateway.
+    """
+    return [
+        {"type": "startEvent", "id": "start1"},
+        {
+            "type": "exclusiveGateway",
+            "id": "exclusive1",
+            "label": "Exclusive Decision",
+            "has_join": True,
+            "branches": [
+                {
+                    "condition": "Condition A",
+                    "path": [
+                        {
+                            "type": "task",
+                            "id": "task2",
+                            "label": "Task A",
+                        },
+                    ],
+                },
+                {
+                    "condition": "Condition B",
+                    "path": [
+                        {
+                            "type": "parallelGateway",
+                            "id": "parallel1",
+                            "branches": [
+                                [
+                                    {
+                                        "type": "task",
+                                        "id": "task3",
+                                        "label": "Parallel Task 1",
+                                    },
+                                ],
+                                [
+                                    {
+                                        "type": "task",
+                                        "id": "task4",
+                                        "label": "Parallel Task 2",
+                                    },
+                                ],
+                            ],
+                        }
+                    ],
+                },
+            ],
+        },
+        {"type": "endEvent", "id": "end1"},
+    ]
+
+
 def dict_to_message_item(message_dict):
     return MessageItem(**message_dict)
 
