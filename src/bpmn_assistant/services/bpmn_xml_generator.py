@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 
-from bpmn_assistant.services.process_creation import BpmnProcessTransformer
+from bpmn_assistant.services import BpmnProcessTransformer
 
 
 class BpmnXmlGenerator:

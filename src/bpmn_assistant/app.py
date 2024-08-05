@@ -11,8 +11,8 @@ from bpmn_assistant.api.requests import (
 from bpmn_assistant.config import logger
 from bpmn_assistant.services import (
     BpmnModelingService,
-    BpmnXmlGenerator,
     determine_intent,
+    BpmnXmlGenerator,
     ConversationalService,
 )
 from bpmn_assistant.utils import (
