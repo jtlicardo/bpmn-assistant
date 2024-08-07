@@ -41,6 +41,50 @@ class TestBpmnJsonGenerator:
                 "type": "exclusiveGateway",
                 "id": "Gateway_0zyhktn",
                 "label": "Decision",
+                "has_join": False,
+                "branches": [
+                    {
+                        "condition": "Yes",
+                        "path": [
+                            {
+                                "type": "task",
+                                "id": "Activity_0s9i4gj",
+                                "label": "Task 1",
+                            }
+                        ],
+                    },
+                    {
+                        "condition": "No",
+                        "path": [
+                            {
+                                "type": "task",
+                                "id": "Activity_0bbgeui",
+                                "label": "Task 2",
+                            }
+                        ],
+                    },
+                ],
+            },
+            {"type": "endEvent", "id": "Event_0pht86l"},
+        ]
+
+        assert result == expected
+
+    def test_create_bpmn_json_exclusive_gateway_join(
+        self, bpmn_xml_exclusive_gateway_join
+    ):
+
+        bpmn_json_generator = BpmnJsonGenerator()
+
+        result = bpmn_json_generator.create_bpmn_json(bpmn_xml_exclusive_gateway_join)
+
+        expected = [
+            {"type": "startEvent", "id": "Event_18zhj8z"},
+            {
+                "type": "exclusiveGateway",
+                "id": "Gateway_0zyhktn",
+                "label": "Decision",
+                "has_join": True,
                 "branches": [
                     {
                         "condition": "Yes",
@@ -167,10 +211,6 @@ class TestBpmnJsonGenerator:
                         }
                     ],
                 ],
-            },
-            {
-                "type": "parallelGateway",
-                "id": "Gateway_0wqz2yp",
             },
             {"type": "endEvent", "id": "Event_13alrua"},
         ]

@@ -2,6 +2,8 @@ import xml.etree.ElementTree as ET
 from collections import deque
 from typing import Any, Optional
 
+from bpmn_assistant.core.enums import BPMNElementType
+
 
 class BpmnJsonGenerator:
     """
@@ -20,6 +22,8 @@ class BpmnJsonGenerator:
             - Supported elements: task, userTask, serviceTask, startEvent, endEvent, exclusiveGateway, parallelGateway
             - The process must have only one start event
             - The process must not contain pools or lanes
+            - Parallel gateways must have a corresponding join gateway
+            - Exclusive gateways must have a common endpoint
         """
         root = ET.fromstring(bpmn_xml)
         process_element = None
@@ -34,18 +38,15 @@ class BpmnJsonGenerator:
             raise ValueError("No process element found in the BPMN XML")
 
         self._get_elements_and_flows(process_element)
-
-        print()
-        # print(json.dumps(self.elements, indent=4))
-        # print(json.dumps(self.flows, indent=4))
-
         self._build_process_structure()
 
         return self.process
 
     def _build_process_structure(self):
         start_event = next(
-            elem for elem in self.elements.values() if elem["type"] == "startEvent"
+            elem
+            for elem in self.elements.values()
+            if elem["type"] == BPMNElementType.START_EVENT.value
         )
 
         # Start building the process structure recursively from the start event
@@ -60,11 +61,9 @@ class BpmnJsonGenerator:
         current_element = self.elements[current_id]
         result = [current_element]
 
-        outgoing_flows = [
-            flow for flow in self.flows.values() if flow["source"] == current_id
-        ]
+        outgoing_flows = self._get_outgoing_flows(current_id)
 
-        if current_element["type"] == "exclusiveGateway":
+        if current_element["type"] == BPMNElementType.EXCLUSIVE_GATEWAY.value:
             gateway = current_element.copy()
             gateway["branches"] = []
             gateway["has_join"] = False
@@ -74,18 +73,11 @@ class BpmnJsonGenerator:
             next_after_join = None
 
             # If the common endpoint is an exclusive gateway, is means this gateway has a join
-            if (
-                common_endpoint
-                and self.elements[common_endpoint]["type"] == "exclusiveGateway"
-            ):
+            if common_endpoint and self._is_exclusive_gateway(common_endpoint):
                 gateway["has_join"] = True
 
                 # Find the element after the join gateway
-                join_outgoing_flows = [
-                    flow
-                    for flow in self.flows.values()
-                    if flow["source"] == common_endpoint
-                ]
+                join_outgoing_flows = self._get_outgoing_flows(common_endpoint)
 
                 # There shouldn't be more than one outgoing flow from the join gateway
                 if len(join_outgoing_flows) != 1:
@@ -100,7 +92,7 @@ class BpmnJsonGenerator:
                 next_after_join = common_endpoint
 
             # Build the branches of the exclusive gateway
-            for i, flow in enumerate(outgoing_flows):
+            for flow in outgoing_flows:
                 branch = {
                     "condition": flow["condition"],
                     "path": self._build_structure_recursive(
@@ -116,8 +108,35 @@ class BpmnJsonGenerator:
             if next_after_join:
                 result.extend(self._build_structure_recursive(next_after_join, stop_at))
 
-        elif current_element["type"] == "parallelGateway":
-            pass
+        elif current_element["type"] == BPMNElementType.PARALLEL_GATEWAY.value:
+            gateway = current_element.copy()
+            gateway["branches"] = []
+
+            # The join_element must be a parallel gateway with exactly one outgoing flow
+            join_element = self._find_common_endpoint(current_id)
+
+            if (
+                not join_element
+                or not self._is_parallel_gateway(join_element)
+                or len(self._get_outgoing_flows(join_element)) != 1
+            ):
+                raise ValueError(
+                    "Parallel gateway must have a corresponding join gateway"
+                )
+
+            # Build the branches of the parallel gateway up to the join gateway
+            for flow in outgoing_flows:
+                branch = self._build_structure_recursive(
+                    flow["target"], stop_at=join_element
+                )
+                gateway["branches"].append(branch)
+
+            result = [gateway]
+
+            # Continue building the process from the element after the join gateway
+            join_outgoing_flows = self._get_outgoing_flows(join_element)
+            next_after_join = join_outgoing_flows[0]["target"]
+            result.extend(self._build_structure_recursive(next_after_join, stop_at))
 
         elif len(outgoing_flows) == 1:
             next_id = outgoing_flows[0]["target"]
@@ -125,17 +144,28 @@ class BpmnJsonGenerator:
 
         return result
 
+    def _is_parallel_gateway(self, gateway_id: str) -> bool:
+        return (
+            self.elements[gateway_id]["type"] == BPMNElementType.PARALLEL_GATEWAY.value
+        )
+
+    def _is_exclusive_gateway(self, gateway_id: str) -> bool:
+        return (
+            self.elements[gateway_id]["type"] == BPMNElementType.EXCLUSIVE_GATEWAY.value
+        )
+
+    def _get_outgoing_flows(self, element_id: str) -> list[dict[str, str]]:
+        return [flow for flow in self.flows.values() if flow["source"] == element_id]
+
     def _find_common_endpoint(self, gateway_id: str) -> Optional[str]:
         """
-        Find the common endpoint for the branches of an exclusive gateway.
+        Find the common endpoint for the branches of a gateway.
         Args:
             gateway_id: The ID of the gateway element.
         Returns:
             The ID of the common endpoint, or None if no common endpoint is found.
         """
-        outgoing_flows = [
-            flow for flow in self.flows.values() if flow["source"] == gateway_id
-        ]
+        outgoing_flows = self._get_outgoing_flows(gateway_id)
         queue = deque([flow["target"] for flow in outgoing_flows])
         visited: set[str] = set()
 
@@ -147,9 +177,7 @@ class BpmnJsonGenerator:
 
             visited.add(current_id)
 
-            next_flows = [
-                flow for flow in self.flows.values() if flow["source"] == current_id
-            ]
+            next_flows = self._get_outgoing_flows(current_id)
 
             for flow in next_flows:
                 queue.append(flow["target"])
@@ -157,24 +185,23 @@ class BpmnJsonGenerator:
         return None
 
     def _get_elements_and_flows(self, process: ET.Element):
+        labeled_elements = {
+            BPMNElementType.TASK.value,
+            BPMNElementType.USER_TASK.value,
+            BPMNElementType.SERVICE_TASK.value,
+            BPMNElementType.EXCLUSIVE_GATEWAY.value,
+        }
+
         for elem in process:
             tag = elem.tag.split("}")[-1]  # Remove namespace
             elem_id = elem.get("id")
 
-            if tag in [
-                "startEvent",
-                "endEvent",
-                "task",
-                "userTask",
-                "serviceTask",
-                "exclusiveGateway",
-                "parallelGateway",
-            ]:
+            if tag in [element.value for element in BPMNElementType]:
                 self.elements[elem_id] = {
                     "type": tag,
                     "id": elem_id,
                 }
-                if tag in ["task", "userTask", "serviceTask", "exclusiveGateway"]:
+                if tag in labeled_elements:
                     self.elements[elem_id]["label"] = elem.get("name")
             elif tag == "sequenceFlow":
                 self.flows[elem_id] = {
