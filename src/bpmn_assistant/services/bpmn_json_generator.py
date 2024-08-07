@@ -51,7 +51,12 @@ class BpmnJsonGenerator:
         # Start building the process structure recursively from the start event
         self.process = self._build_structure_recursive(start_event["id"])
 
-    def _build_structure_recursive(self, current_id: str) -> list[dict[str, Any]]:
+    def _build_structure_recursive(
+        self, current_id: str, stop_at: Optional[str] = None
+    ) -> list[dict[str, Any]]:
+        if current_id == stop_at:
+            return []
+
         current_element = self.elements[current_id]
         result = [current_element]
 
@@ -59,13 +64,14 @@ class BpmnJsonGenerator:
             flow for flow in self.flows.values() if flow["source"] == current_id
         ]
 
-        if current_element["type"] in ["exclusiveGateway", "parallelGateway"]:
+        if current_element["type"] == "exclusiveGateway":
             gateway = current_element.copy()
             gateway["branches"] = []
             gateway["has_join"] = False
 
-            # Find the common endpoint and the paths for each branch
-            common_endpoint, branch_paths = self._find_branch_endpoints(current_id)
+            # Find the common endpoint of the branches
+            common_endpoint = self._find_common_endpoint(current_id)
+            next_after_join = None
 
             # If the common endpoint is an exclusive gateway, is means this gateway has a join
             if (
@@ -87,105 +93,68 @@ class BpmnJsonGenerator:
                         "Join gateway should have exactly one outgoing flow"
                     )
 
-                # We will continue building the structure from the target of the outgoing flow
-                common_endpoint = join_outgoing_flows[0]["target"]
+                # We continue building the structure from the element after the join gateway
+                next_after_join = join_outgoing_flows[0]["target"]
+            else:
+                # We continue building the process from the common endpoint
+                next_after_join = common_endpoint
 
+            # Build the branches of the exclusive gateway
             for i, flow in enumerate(outgoing_flows):
                 branch = {
                     "condition": flow["condition"],
-                    "path": branch_paths[i],
+                    "path": self._build_structure_recursive(
+                        flow["target"], stop_at=next_after_join
+                    ),
                 }
+
                 gateway["branches"].append(branch)
 
             result = [gateway]
 
-            # Continue building the structure from the common endpoint
-            if common_endpoint:
-                result.extend(self._build_structure_recursive(common_endpoint))
+            # Continue building the structure from the element after the join gateway
+            if next_after_join:
+                result.extend(self._build_structure_recursive(next_after_join, stop_at))
+
+        elif current_element["type"] == "parallelGateway":
+            pass
 
         elif len(outgoing_flows) == 1:
             next_id = outgoing_flows[0]["target"]
-            result.extend(self._build_structure_recursive(next_id))
+            result.extend(self._build_structure_recursive(next_id, stop_at))
 
         return result
 
-    def _find_branch_endpoints(
-        self, gateway_id: str
-    ) -> tuple[Optional[str], list[list[dict[str, Any]]]]:
+    def _find_common_endpoint(self, gateway_id: str) -> Optional[str]:
         """
-        Find the common endpoint for the branches of an exclusive gateway, handling nested gateways.
+        Find the common endpoint for the branches of an exclusive gateway.
         Args:
             gateway_id: The ID of the gateway element.
         Returns:
-            A tuple containing the ID of the common endpoint and the paths of the branches.
+            The ID of the common endpoint, or None if no common endpoint is found.
         """
-
         outgoing_flows = [
             flow for flow in self.flows.values() if flow["source"] == gateway_id
         ]
-        queue = deque([(flow["target"], []) for flow in outgoing_flows])
+        queue = deque([flow["target"] for flow in outgoing_flows])
         visited: set[str] = set()
-        branch_paths: list[list[dict[str, Any]]] = [[] for _ in outgoing_flows]
 
         while queue:
-            # Get the next node and its path from the queue
-            current_id, path = queue.popleft()
+            current_id = queue.popleft()
 
-            # If we've visited this node before, it's the common endpoint
             if current_id in visited:
+                return current_id
 
-                # Remove the common endpoint from all branch paths
-                for i in range(len(branch_paths)):
-                    if branch_paths[i] and branch_paths[i][-1]["id"] == current_id:
-                        branch_paths[i] = branch_paths[i][:-1]
-
-                return current_id, branch_paths
-
-            # Mark the current node as visited
             visited.add(current_id)
 
-            # Get the current element
-            current_element = self.elements[current_id]
-
-            if current_element["type"] in ["exclusiveGateway", "parallelGateway"]:
-                # Recursively build the structure for nested gateways
-                nested_structure = self._build_structure_recursive(current_id)
-                path.extend(nested_structure)
-
-                # Find the last element of the nested structure to continue from
-                last_element = nested_structure[-1]
-                if isinstance(last_element, dict) and last_element.get("type") in [
-                    "exclusiveGateway",
-                    "parallelGateway",
-                ]:
-                    # If the last element is a gateway, we need to find its endpoint
-                    nested_endpoint, _ = self._find_branch_endpoints(last_element["id"])
-                    if nested_endpoint:
-                        current_id = nested_endpoint
-                else:
-                    current_id = last_element["id"]
-            else:
-                # If the current element is not a gateway, add it to the path
-                path.append(current_element)
-
-            # Determine which branch this path belongs to and update branch_paths
-            for i, initial_flow in enumerate(outgoing_flows):
-                if initial_flow["target"] == path[0]["id"]:
-                    branch_paths[i] = path[:]
-                    break
-
-            # Get all outgoing flows from the current node
             next_flows = [
                 flow for flow in self.flows.values() if flow["source"] == current_id
             ]
 
-            # Add the targets of these flows to the queue
             for flow in next_flows:
-                queue.append((flow["target"], path[:]))
+                queue.append(flow["target"])
 
-        # If we've exhausted the queue without finding a common endpoint,
-        # return None as the endpoint and the paths we've found
-        return None, branch_paths
+        return None
 
     def _get_elements_and_flows(self, process: ET.Element):
         for elem in process:
