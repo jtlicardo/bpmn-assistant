@@ -167,9 +167,6 @@ class BpmnJsonGenerator:
         """
         paths = self.trace_paths(gateway_id)
 
-        # Remove the gateway from the first path
-        paths[0] = paths[0][1:]
-
         # Go through the first path
         for element_id in paths[0]:
             # Check if element exists in every other path
@@ -202,6 +199,9 @@ class BpmnJsonGenerator:
                 next_id = flow["target"]
                 new_path = current_path + [next_id]
                 queue.append((next_id, new_path))
+
+        # Remove the starting gateway from the paths
+        paths = [path[1:] for path in paths]
 
         return paths
 
