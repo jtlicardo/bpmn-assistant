@@ -104,7 +104,7 @@ class BpmnJsonGenerator:
                 branch = {
                     "condition": flow["condition"],
                     "path": self._build_structure_recursive(
-                        flow["target"], stop_at=next_after_join
+                        flow["target"], stop_at=common_endpoint
                     ),
                 }
 
