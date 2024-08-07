@@ -335,6 +335,14 @@ def bpmn_xml_exclusive_gateway():
 
 
 @pytest.fixture
+def bpmn_xml_exclusive_gateway_join():
+    """
+    Description: A BPMN XML string that represents a process with an exclusive gateway that has a join gateway.
+    """
+    return load_bpmn("exclusive_gateway_join.bpmn")
+
+
+@pytest.fixture
 def bpmn_xml_nested_exclusive_gateway():
     """
     Description: A BPMN XML string that represents a process with a nested exclusive gateway.
