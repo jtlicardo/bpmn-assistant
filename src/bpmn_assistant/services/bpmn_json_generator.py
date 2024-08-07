@@ -165,24 +165,45 @@ class BpmnJsonGenerator:
         Returns:
             The ID of the common endpoint, or None if no common endpoint is found.
         """
-        outgoing_flows = self._get_outgoing_flows(gateway_id)
-        queue = deque([flow["target"] for flow in outgoing_flows])
-        visited: set[str] = set()
+        paths = self.trace_paths(gateway_id)
 
-        while queue:
-            current_id = queue.popleft()
+        # Remove the gateway from the first path
+        paths[0] = paths[0][1:]
 
-            if current_id in visited:
-                return current_id
-
-            visited.add(current_id)
-
-            next_flows = self._get_outgoing_flows(current_id)
-
-            for flow in next_flows:
-                queue.append(flow["target"])
+        # Go through the first path
+        for element_id in paths[0]:
+            # Check if element exists in every other path
+            if all(element_id in path for path in paths[1:]):
+                return element_id
 
         return None
+
+    def trace_paths(self, gateway_id: str) -> list[list[str]]:
+        """
+        Trace the paths from a given gateway using BFS, constructing an ordered list of elements
+        encountered along each outgoing flow.
+        Args:
+            gateway_id: The ID of the gateway element.
+        Returns:
+           A list of paths, where each path is a list of element IDs.
+        """
+        paths = []
+        queue = deque([(gateway_id, [gateway_id])])
+
+        while queue:
+            current_id, current_path = queue.popleft()
+            outgoing_flows = self._get_outgoing_flows(current_id)
+
+            if not outgoing_flows:
+                paths.append(current_path)
+                continue
+
+            for flow in outgoing_flows:
+                next_id = flow["target"]
+                new_path = current_path + [next_id]
+                queue.append((next_id, new_path))
+
+        return paths
 
     def _get_elements_and_flows(self, process: ET.Element):
         labeled_elements = {

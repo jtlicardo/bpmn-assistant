@@ -216,3 +216,77 @@ class TestBpmnJsonGenerator:
         ]
 
         assert result == expected
+
+    def test_create_bpmn_json_pg_inside_eg(self, bpmn_xml_pg_inside_eg):
+
+        bpmn_json_generator = BpmnJsonGenerator()
+
+        result = bpmn_json_generator.create_bpmn_json(bpmn_xml_pg_inside_eg)
+
+        expected = [
+            {"type": "startEvent", "id": "StartEvent_1"},
+            {
+                "type": "exclusiveGateway",
+                "id": "Gateway_01vw8ri",
+                "label": "What shall I do today",
+                "has_join": True,
+                "branches": [
+                    {
+                        "condition": "Focus",
+                        "path": [
+                            {
+                                "type": "task",
+                                "id": "Activity_0up0fuz",
+                                "label": "Do one thing",
+                            }
+                        ],
+                    },
+                    {
+                        "condition": "Multitask",
+                        "path": [
+                            {
+                                "type": "parallelGateway",
+                                "id": "Gateway_10rxkr7",
+                                "branches": [
+                                    [
+                                        {
+                                            "type": "task",
+                                            "id": "Activity_0uje8a9",
+                                            "label": "Do the first thing",
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "type": "task",
+                                            "id": "Activity_09r4jdn",
+                                            "label": "Do the second thing",
+                                        }
+                                    ],
+                                ],
+                            }
+                        ],
+                    },
+                ],
+            },
+            {"type": "endEvent", "id": "Event_09mvj7a"},
+        ]
+
+        assert result == expected
+
+    def test_create_bpmn_json_eg_inside_pg(self, bpmn_xml_eg_inside_pg):
+        pass
+        # bpmn_json_generator = BpmnJsonGenerator()
+        #
+        # result = bpmn_json_generator.create_bpmn_json(bpmn_xml_eg_inside_pg)
+        #
+        # expected = [
+        #     {"type": "startEvent", "id": "StartEvent_1"},
+        #     {
+        #         "type": "parallelGateway",
+        #         "id": "Gateway_0z6v3x7",
+        #         "branches": [],
+        #     },
+        #     {"type": "endEvent", "id": "Event_0q4v2x9"},
+        # ]
+        #
+        # assert result == expected
