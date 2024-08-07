@@ -1,4 +1,3 @@
-import json
 import xml.etree.ElementTree as ET
 from collections import deque
 from typing import Any, Optional
@@ -37,8 +36,8 @@ class BpmnJsonGenerator:
         self._get_elements_and_flows(process_element)
 
         print()
-        print(json.dumps(self.elements, indent=4))
-        print(json.dumps(self.flows, indent=4))
+        # print(json.dumps(self.elements, indent=4))
+        # print(json.dumps(self.flows, indent=4))
 
         self._build_process_structure()
 
@@ -62,9 +61,8 @@ class BpmnJsonGenerator:
 
         if current_element["type"] in ["exclusiveGateway", "parallelGateway"]:
             gateway = current_element.copy()
-
-            # Create the branches key
             gateway["branches"] = []
+            gateway["has_join"] = False
 
             # Find the common endpoint and the paths for each branch
             common_endpoint, branch_paths = self._find_branch_endpoints(current_id)
@@ -91,8 +89,6 @@ class BpmnJsonGenerator:
 
                 # We will continue building the structure from the target of the outgoing flow
                 common_endpoint = join_outgoing_flows[0]["target"]
-            else:
-                gateway["has_join"] = False
 
             for i, flow in enumerate(outgoing_flows):
                 branch = {
@@ -117,7 +113,7 @@ class BpmnJsonGenerator:
         self, gateway_id: str
     ) -> tuple[Optional[str], list[list[dict[str, Any]]]]:
         """
-        Find the common endpoint for the branches of an exclusive gateway.
+        Find the common endpoint for the branches of an exclusive gateway, handling nested gateways.
         Args:
             gateway_id: The ID of the gateway element.
         Returns:
@@ -148,9 +144,29 @@ class BpmnJsonGenerator:
             # Mark the current node as visited
             visited.add(current_id)
 
-            # Get the current element and add it to the path
+            # Get the current element
             current_element = self.elements[current_id]
-            path.append(current_element)
+
+            if current_element["type"] in ["exclusiveGateway", "parallelGateway"]:
+                # Recursively build the structure for nested gateways
+                nested_structure = self._build_structure_recursive(current_id)
+                path.extend(nested_structure)
+
+                # Find the last element of the nested structure to continue from
+                last_element = nested_structure[-1]
+                if isinstance(last_element, dict) and last_element.get("type") in [
+                    "exclusiveGateway",
+                    "parallelGateway",
+                ]:
+                    # If the last element is a gateway, we need to find its endpoint
+                    nested_endpoint, _ = self._find_branch_endpoints(last_element["id"])
+                    if nested_endpoint:
+                        current_id = nested_endpoint
+                else:
+                    current_id = last_element["id"]
+            else:
+                # If the current element is not a gateway, add it to the path
+                path.append(current_element)
 
             # Determine which branch this path belongs to and update branch_paths
             for i, initial_flow in enumerate(outgoing_flows):
