@@ -419,3 +419,35 @@ class TestBpmnJsonGenerator:
         ]
 
         assert result == expected
+
+    def test_create_bpmn_json_eg_empty_path(self, bpmn_xml_eg_empty_path):
+
+        bpmn_json_generator = BpmnJsonGenerator()
+
+        result = bpmn_json_generator.create_bpmn_json(bpmn_xml_eg_empty_path)
+
+        expected = [
+            {"type": "startEvent", "id": "StartEvent_1"},
+            {
+                "type": "exclusiveGateway",
+                "id": "Gateway_12vmwxc",
+                "label": "Decision",
+                "has_join": False,
+                "branches": [
+                    {
+                        "condition": "Yes",
+                        "path": [
+                            {
+                                "type": "task",
+                                "id": "Activity_078dkvm",
+                                "label": "Do optional task",
+                            }
+                        ],
+                    },
+                    {"condition": "No", "path": []},
+                ],
+            },
+            {"type": "endEvent", "id": "Event_02kplnj"},
+        ]
+
+        assert result == expected

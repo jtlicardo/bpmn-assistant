@@ -23,7 +23,7 @@ class BpmnJsonGenerator:
             - The process must have only one start event
             - The process must not contain pools or lanes
             - Parallel gateways must have a corresponding join gateway
-            - Exclusive gateways must have a common endpoint
+            - Loops must not contain gateways
         """
         root = ET.fromstring(bpmn_xml)
         process_element = None
@@ -117,21 +117,21 @@ class BpmnJsonGenerator:
                     "path": branch_path,
                 }
 
-                # If the branch is empty (due to a loop), add a 'next' attribute
                 if not branch_path:
-                    branch["next"] = flow["target"]
+                    if flow["target"] != common_branch_endpoint:
+                        branch["next"] = flow["target"]
                 else:
+                    # Add 'next' attribute if last element does not lead to common branch endpoint
                     last_element = branch_path[-1]
                     last_element_outgoing_flows = self._get_outgoing_flows(
                         last_element["id"]
                     )
 
-                    if len(last_element_outgoing_flows) == 1:
-                        if (
-                            last_element_outgoing_flows[0]["target"]
-                            != common_branch_endpoint
-                        ):
-                            branch["next"] = last_element_outgoing_flows[0]["target"]
+                    if len(last_element_outgoing_flows) == 1 and (
+                        last_element_outgoing_flows[0]["target"]
+                        != common_branch_endpoint
+                    ):
+                        branch["next"] = last_element_outgoing_flows[0]["target"]
 
                 gateway["branches"].append(branch)
 
