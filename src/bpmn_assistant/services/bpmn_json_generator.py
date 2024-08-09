@@ -214,7 +214,7 @@ class BpmnJsonGenerator:
         Returns:
             The ID of the common endpoint, or None if no common endpoint is found.
         """
-        paths = self.trace_paths(gateway_id)
+        paths = self._trace_paths(gateway_id)
 
         # Go through the first path
         for element_id in paths[0]:
@@ -224,7 +224,7 @@ class BpmnJsonGenerator:
 
         return None
 
-    def trace_paths(self, gateway_id: str) -> list[list[str]]:
+    def _trace_paths(self, gateway_id: str) -> list[list[str]]:
         """
         Trace the paths from a given gateway using BFS, constructing an ordered list of elements
         encountered along each outgoing flow. Handles loops by stopping when an element is revisited.
