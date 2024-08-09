@@ -274,19 +274,56 @@ class TestBpmnJsonGenerator:
         assert result == expected
 
     def test_create_bpmn_json_eg_inside_pg(self, bpmn_xml_eg_inside_pg):
-        pass
-        # bpmn_json_generator = BpmnJsonGenerator()
-        #
-        # result = bpmn_json_generator.create_bpmn_json(bpmn_xml_eg_inside_pg)
-        #
-        # expected = [
-        #     {"type": "startEvent", "id": "StartEvent_1"},
-        #     {
-        #         "type": "parallelGateway",
-        #         "id": "Gateway_0z6v3x7",
-        #         "branches": [],
-        #     },
-        #     {"type": "endEvent", "id": "Event_0q4v2x9"},
-        # ]
-        #
-        # assert result == expected
+        bpmn_json_generator = BpmnJsonGenerator()
+
+        result = bpmn_json_generator.create_bpmn_json(bpmn_xml_eg_inside_pg)
+
+        expected = [
+            {"type": "startEvent", "id": "StartEvent_1"},
+            {
+                "type": "parallelGateway",
+                "id": "Gateway_1eyobl0",
+                "branches": [
+                    [
+                        {
+                            "type": "task",
+                            "id": "Activity_1oirso2",
+                            "label": "Task 1",
+                        }
+                    ],
+                    [
+                        {
+                            "type": "exclusiveGateway",
+                            "id": "Gateway_1yv434l",
+                            "label": "Decision",
+                            "has_join": True,
+                            "branches": [
+                                {
+                                    "condition": "Yes",
+                                    "path": [
+                                        {
+                                            "type": "task",
+                                            "id": "Activity_0xtreye",
+                                            "label": "Task 2",
+                                        }
+                                    ],
+                                },
+                                {
+                                    "condition": "No",
+                                    "path": [
+                                        {
+                                            "type": "task",
+                                            "id": "Activity_01s7h04",
+                                            "label": "Task 3",
+                                        }
+                                    ],
+                                },
+                            ],
+                        }
+                    ],
+                ],
+            },
+            {"type": "endEvent", "id": "Event_1nctra5"},
+        ]
+
+        assert result == expected
