@@ -120,6 +120,18 @@ class BpmnJsonGenerator:
                 # If the branch is empty (due to a loop), add a 'next' attribute
                 if not branch_path:
                     branch["next"] = flow["target"]
+                else:
+                    last_element = branch_path[-1]
+                    last_element_outgoing_flows = self._get_outgoing_flows(
+                        last_element["id"]
+                    )
+
+                    if len(last_element_outgoing_flows) == 1:
+                        if (
+                            last_element_outgoing_flows[0]["target"]
+                            != common_branch_endpoint
+                        ):
+                            branch["next"] = last_element_outgoing_flows[0]["target"]
 
                 gateway["branches"].append(branch)
 
