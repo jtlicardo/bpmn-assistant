@@ -372,3 +372,11 @@ def bpmn_xml_eg_inside_pg():
     Description: A BPMN XML string that represents a process with a parallel gateway that contains an exclusive gateway.
     """
     return load_bpmn("eg_inside_pg.bpmn")
+
+
+@pytest.fixture
+def bpmn_xml_eg_next():
+    """
+    Description: A BPMN XML string that represents a process with an exclusive gateway that contains a loop.
+    """
+    return load_bpmn("eg_next.bpmn")

@@ -77,7 +77,7 @@ Textual description:
     "process": [
         {
             "type": "startEvent",
-            "id": "start1",
+            "id": "start",
         },
         {
             "type": "userTask",
@@ -129,7 +129,7 @@ Textual description:
     "process": [
         {
             "type": "startEvent",
-            "id": "start1",
+            "id": "start",
         },
         {
             "type": "parallelGateway",
@@ -165,6 +165,58 @@ Textual description:
             "type": "endEvent",
             "id": "end1",
         }
+    ]
+}
+```
+
+---
+
+Textual description: "Someone starts a process by entering an exam room. After that, they take the test. Once the exam is finished, their score is checked. If they scored more than 50%, their grade is recorded and the process ends. But if they fail, they have to go back to the beginning and take the exam again."
+
+```json
+{
+    "process": [
+      {
+        "type": "startEvent",
+        "id": "start"
+      },
+      {
+        "type": "task",
+        "id": "task1",
+        "label": "Enter exam room"
+      },
+      {
+        "type": "task",
+        "id": "task2",
+        "label": "Take test"
+      },
+      {
+        "type": "exclusiveGateway",
+        "id": "eg",
+        "label": "Score more than 50%?",
+        "has_join": false,
+        "branches": [
+          {
+            "condition": "Yes",
+            "path": [
+              {
+                "type": "task",
+                "id": "task3",
+                "label": "Enter grade"
+              },
+              {
+                "type": "endEvent",
+                "id": "end1"
+              }
+            ]
+          },
+          {
+            "condition": "No",
+            "path": [],
+            "next": "task1"
+          }
+        ]
+      }
     ]
 }
 ```
