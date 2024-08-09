@@ -163,6 +163,15 @@ class BpmnJsonGenerator:
         common_branch_endpoint: Optional[str],
         flow: dict[str, str],
     ) -> dict[str, Any]:
+        """
+        Build the branch structure for an exclusive gateway.
+        Args:
+            branch_path: The structure of the branch.
+            common_branch_endpoint: The ID of the common endpoint for the branches of the gateway.
+            flow: The flow object of the branch.
+        Returns:
+            The branch structure ("condition", "path", "next").
+        """
         branch = {
             "condition": flow["condition"],
             "path": branch_path,
