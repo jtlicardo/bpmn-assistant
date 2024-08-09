@@ -347,7 +347,7 @@ class TestBpmnJsonGenerator:
             },
             {
                 "type": "exclusiveGateway",
-                "id": "Gateway_0zyhktn",
+                "id": "Gateway_0pckt0r",
                 "label": "Score more than 50%?",
                 "has_join": False,
                 "branches": [
@@ -356,8 +356,8 @@ class TestBpmnJsonGenerator:
                         "path": [
                             {
                                 "type": "task",
-                                "id": "Activity_0s9i4gj",
-                                "label": "Enter grade",
+                                "id": "Activity_1rcnqda",
+                                "label": "Enter the grade",
                             },
                             {"type": "endEvent", "id": "Event_10cwi32"},
                         ],

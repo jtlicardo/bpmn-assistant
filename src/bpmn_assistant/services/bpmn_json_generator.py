@@ -53,8 +53,20 @@ class BpmnJsonGenerator:
         self.process = self._build_structure_recursive(start_event["id"])
 
     def _build_structure_recursive(
-        self, current_id: str, stop_at: Optional[str] = None
+        self,
+        current_id: str,
+        stop_at: Optional[str] = None,
+        visited: Optional[set] = None,
     ) -> list[dict[str, Any]]:
+        if visited is None:
+            visited = set()
+
+        if current_id in visited:
+            # We've encountered a loop
+            return []
+
+        visited.add(current_id)
+
         if current_id == stop_at:
             return []
 
@@ -68,52 +80,65 @@ class BpmnJsonGenerator:
             gateway["branches"] = []
             gateway["has_join"] = False
 
-            # Find the common endpoint of the branches
-            common_endpoint = self._find_common_endpoint(current_id)
-            next_after_join = None
+            common_branch_endpoint = self._find_common_branch_endpoint(current_id)
+            next_element_after_join = None
 
             # If the common endpoint is an exclusive gateway, is means this gateway has a join
-            if common_endpoint and self._is_exclusive_gateway(common_endpoint):
+            if common_branch_endpoint and self._is_exclusive_gateway(
+                common_branch_endpoint
+            ):
                 gateway["has_join"] = True
 
-                # Find the element after the join gateway
-                join_outgoing_flows = self._get_outgoing_flows(common_endpoint)
+                # Retrieve outgoing flows to determine the next element after the join
+                join_outgoing_flows = self._get_outgoing_flows(common_branch_endpoint)
 
-                # There shouldn't be more than one outgoing flow from the join gateway
+                # Validate that the join gateway has exactly one outgoing flow
                 if len(join_outgoing_flows) != 1:
                     raise ValueError(
                         "Join gateway should have exactly one outgoing flow"
                     )
 
-                # We continue building the structure from the element after the join gateway
-                next_after_join = join_outgoing_flows[0]["target"]
+                # Proceed with the next element after the join gateway
+                next_element_after_join = join_outgoing_flows[0]["target"]
             else:
-                # We continue building the process from the common endpoint
-                next_after_join = common_endpoint
+                # Continue building the process from the common endpoint
+                next_element_after_join = common_branch_endpoint
 
             # Build the branches of the exclusive gateway
             for flow in outgoing_flows:
+                branch_path = self._build_structure_recursive(
+                    flow["target"],
+                    stop_at=common_branch_endpoint,
+                    visited=visited.copy(),
+                )
+
                 branch = {
                     "condition": flow["condition"],
-                    "path": self._build_structure_recursive(
-                        flow["target"], stop_at=common_endpoint
-                    ),
+                    "path": branch_path,
                 }
+
+                # If the branch is empty (due to a loop), add a 'next' attribute
+                if not branch_path:
+                    branch["next"] = flow["target"]
 
                 gateway["branches"].append(branch)
 
             result = [gateway]
 
             # Continue building the structure from the element after the join gateway
-            if next_after_join:
-                result.extend(self._build_structure_recursive(next_after_join, stop_at))
+            if next_element_after_join:
+                result.extend(
+                    self._build_structure_recursive(
+                        next_element_after_join, stop_at, visited
+                    )
+                )
 
         elif current_element["type"] == BPMNElementType.PARALLEL_GATEWAY.value:
             gateway = current_element.copy()
             gateway["branches"] = []
 
             # The join_element must be a parallel gateway with exactly one outgoing flow
-            join_element = self._find_common_endpoint(current_id)
+            join_element = self._find_common_branch_endpoint(current_id)
 
             if (
                 not join_element
@@ -127,7 +152,7 @@ class BpmnJsonGenerator:
             # Build the branches of the parallel gateway up to the join gateway
             for flow in outgoing_flows:
                 branch = self._build_structure_recursive(
-                    flow["target"], stop_at=join_element
+                    flow["target"], stop_at=join_element, visited=visited.copy()
                 )
                 gateway["branches"].append(branch)
 
@@ -135,12 +160,16 @@ class BpmnJsonGenerator:
 
             # Continue building the process from the element after the join gateway
             join_outgoing_flows = self._get_outgoing_flows(join_element)
-            next_after_join = join_outgoing_flows[0]["target"]
-            result.extend(self._build_structure_recursive(next_after_join, stop_at))
+            next_element_after_join = join_outgoing_flows[0]["target"]
+            result.extend(
+                self._build_structure_recursive(
+                    next_element_after_join, stop_at, visited
+                )
+            )
 
         elif len(outgoing_flows) == 1:
             next_id = outgoing_flows[0]["target"]
-            result.extend(self._build_structure_recursive(next_id, stop_at))
+            result.extend(self._build_structure_recursive(next_id, stop_at, visited))
 
         return result
 
@@ -157,7 +186,7 @@ class BpmnJsonGenerator:
     def _get_outgoing_flows(self, element_id: str) -> list[dict[str, str]]:
         return [flow for flow in self.flows.values() if flow["source"] == element_id]
 
-    def _find_common_endpoint(self, gateway_id: str) -> Optional[str]:
+    def _find_common_branch_endpoint(self, gateway_id: str) -> Optional[str]:
         """
         Find the common endpoint for the branches of a gateway.
         Args:
@@ -178,17 +207,19 @@ class BpmnJsonGenerator:
     def trace_paths(self, gateway_id: str) -> list[list[str]]:
         """
         Trace the paths from a given gateway using BFS, constructing an ordered list of elements
-        encountered along each outgoing flow.
+        encountered along each outgoing flow. Handles loops by stopping when an element is revisited.
         Args:
             gateway_id: The ID of the gateway element.
         Returns:
            A list of paths, where each path is a list of element IDs.
         """
         paths = []
-        queue = deque([(gateway_id, [gateway_id])])
+
+        # The queue contains the current element, the path taken so far, and the visited elements
+        queue = deque([(gateway_id, [gateway_id], {gateway_id})])
 
         while queue:
-            current_id, current_path = queue.popleft()
+            current_id, current_path, visited = queue.popleft()
             outgoing_flows = self._get_outgoing_flows(current_id)
 
             if not outgoing_flows:
@@ -197,8 +228,14 @@ class BpmnJsonGenerator:
 
             for flow in outgoing_flows:
                 next_id = flow["target"]
-                new_path = current_path + [next_id]
-                queue.append((next_id, new_path))
+                if next_id not in visited:
+                    new_path = current_path + [next_id]
+                    new_visited = visited.copy()
+                    new_visited.add(next_id)
+                    queue.append((next_id, new_path, new_visited))
+                else:
+                    # We've encountered a loop, add this path to the results
+                    paths.append(current_path + [next_id])
 
         # Remove the starting gateway from the paths
         paths = [path[1:] for path in paths]
