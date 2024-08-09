@@ -4,7 +4,7 @@ from enum import Enum
 class OpenAIModels(Enum):
     GPT_4 = "gpt-4-turbo"
     GPT_4O_MINI = "gpt-4o-mini"
-    GPT_4O = "gpt-4o"
+    GPT_4O = "gpt-4o-2024-08-06"
 
 
 class AnthropicModels(Enum):
