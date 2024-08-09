@@ -391,6 +391,22 @@ def bpmn_xml_eg_next_2():
 
 
 @pytest.fixture
+def bpmn_xml_eg_next_3():
+    """
+    Description: A BPMN XML string that represents a process with an exclusive gateway that contains a loop with a parallel gateway.
+    """
+    return load_bpmn("eg_next_3.bpmn")
+
+
+@pytest.fixture
+def bpmn_xml_eg_next_4():
+    """
+    Description: A BPMN XML string that represents a process with an exclusive gateway that contains a loop with another exclusive gateway.
+    """
+    return load_bpmn("eg_next_4.bpmn")
+
+
+@pytest.fixture
 def bpmn_xml_eg_empty_path():
     """
     Description: A BPMN XML string that represents a process with an exclusive gateway that contains an empty path.
