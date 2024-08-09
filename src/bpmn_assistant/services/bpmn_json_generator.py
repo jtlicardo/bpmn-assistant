@@ -57,7 +57,6 @@ class BpmnJsonGenerator:
             visited = set()
 
         if current_id in visited:
-            # We've encountered a loop
             return []
 
         visited.add(current_id)
