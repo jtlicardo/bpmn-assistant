@@ -119,15 +119,32 @@ class BpmnJsonGenerator:
                 else:
                     # Add 'next' attribute if last element does not lead to common branch endpoint
                     last_element = branch_path[-1]
+
                     last_element_outgoing_flows = self._get_outgoing_flows(
                         last_element["id"]
                     )
 
+                    # The last element is not a gateway (has 1 outgoing flow)
                     if len(last_element_outgoing_flows) == 1 and (
                         last_element_outgoing_flows[0]["target"]
                         != common_branch_endpoint
                     ):
                         branch["next"] = last_element_outgoing_flows[0]["target"]
+                    # The last element is a gateway (has multiple outgoing flows)
+                    elif len(last_element_outgoing_flows) > 1:
+                        last_element_id = self._find_common_branch_endpoint(
+                            last_element["id"]
+                        )
+
+                        last_element_outgoing_flows = self._get_outgoing_flows(
+                            last_element_id
+                        )
+
+                        if len(last_element_outgoing_flows) == 1 and (
+                            last_element_outgoing_flows[0]["target"]
+                            != common_branch_endpoint
+                        ):
+                            branch["next"] = last_element_outgoing_flows[0]["target"]
 
                 gateway["branches"].append(branch)
 

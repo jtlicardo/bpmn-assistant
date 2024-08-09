@@ -420,6 +420,72 @@ class TestBpmnJsonGenerator:
 
         assert result == expected
 
+    def test_create_bpmn_json_eg_next_3(self, bpmn_xml_eg_next_3):
+        bpmn_json_generator = BpmnJsonGenerator()
+
+        result = bpmn_json_generator.create_bpmn_json(bpmn_xml_eg_next_3)
+
+        expected = [
+            {"type": "startEvent", "id": "StartEvent_1"},
+            {
+                "type": "task",
+                "id": "Activity_1seg49t",
+                "label": "Enter exam room",
+            },
+            {
+                "type": "task",
+                "id": "Activity_0nhhj6o",
+                "label": "Take test",
+            },
+            {
+                "type": "exclusiveGateway",
+                "id": "Gateway_0pckt0r",
+                "label": "Score more than 50%?",
+                "has_join": False,
+                "branches": [
+                    {
+                        "condition": "Yes",
+                        "path": [
+                            {
+                                "type": "task",
+                                "id": "Activity_1rcnqda",
+                                "label": "Enter the grade",
+                            },
+                            {"type": "endEvent", "id": "Event_10cwi32"},
+                        ],
+                    },
+                    {
+                        "condition": "No",
+                        "path": [
+                            {
+                                "type": "parallelGateway",
+                                "id": "Gateway_1oysjdq",
+                                "branches": [
+                                    [
+                                        {
+                                            "type": "task",
+                                            "id": "Activity_1cg3ew8",
+                                            "label": "Do practice problems",
+                                        }
+                                    ],
+                                    [
+                                        {
+                                            "type": "task",
+                                            "id": "Activity_0t1g0a6",
+                                            "label": "Study",
+                                        }
+                                    ],
+                                ],
+                            }
+                        ],
+                        "next": "Activity_1seg49t",
+                    },
+                ],
+            },
+        ]
+
+        assert result == expected
+
     def test_create_bpmn_json_eg_empty_path(self, bpmn_xml_eg_empty_path):
 
         bpmn_json_generator = BpmnJsonGenerator()
