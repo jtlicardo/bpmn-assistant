@@ -123,7 +123,6 @@ class BpmnJsonGenerator:
             gateway = current_element.copy()
             gateway["branches"] = []
 
-            # The join_element must be a parallel gateway with exactly one outgoing flow
             join_element = self._find_common_branch_endpoint(current_id)
 
             if (
