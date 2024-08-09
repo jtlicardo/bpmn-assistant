@@ -15,6 +15,12 @@ class BpmnJsonGenerator:
         self.flows: dict[str, dict[str, str]] = {}
         self.process: list[dict[str, Any]] = []
 
+    def _find_process_element(self, root: ET.Element) -> ET.Element:
+        for elem in root.iter():
+            if elem.tag.endswith("process"):
+                return elem
+        raise ValueError("No process element found in the BPMN XML")
+
     def create_bpmn_json(self, bpmn_xml: str) -> list[dict[str, Any]]:
         """
         Create the JSON representation of the process from the BPMN XML
@@ -26,17 +32,7 @@ class BpmnJsonGenerator:
             - Loops must not contain gateways
         """
         root = ET.fromstring(bpmn_xml)
-        process_element = None
-
-        # Find the process element
-        for elem in root.iter():
-            if elem.tag.endswith("process"):
-                process_element = elem
-                break
-
-        if process_element is None:
-            raise ValueError("No process element found in the BPMN XML")
-
+        process_element = self._find_process_element(root)
         self._get_elements_and_flows(process_element)
         self._build_process_structure()
 
