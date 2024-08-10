@@ -14,6 +14,7 @@ from bpmn_assistant.services import (
     determine_intent,
     BpmnXmlGenerator,
     ConversationalService,
+    BpmnJsonGenerator,
 )
 from bpmn_assistant.utils import (
     get_llm_facade,
@@ -32,6 +33,7 @@ app.add_middleware(
 
 bpmn_modeling_service = BpmnModelingService()
 bpmn_xml_generator = BpmnXmlGenerator()
+bpmn_json_generator = BpmnJsonGenerator()
 
 
 @app.post("/bpmn_to_json")
@@ -39,7 +41,12 @@ def _bpmn_to_json(request: BpmnToJsonRequest) -> JSONResponse:
     """
     Convert the BPMN XML to its JSON representation
     """
-    pass
+    try:
+        result = bpmn_json_generator.create_bpmn_json(request.bpmn_xml)
+        return JSONResponse(content=result)
+    except Exception as e:
+        logger.error(f"Error: {str(e)}", exc_info=e)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/available_providers")

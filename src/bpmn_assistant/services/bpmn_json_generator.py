@@ -245,9 +245,7 @@ class BpmnJsonGenerator:
         """
         paths = self._trace_paths(gateway_id)
 
-        # Go through the first path
         for element_id in paths[0]:
-            # Check if element exists in every other path
             if all(element_id in path for path in paths[1:]):
                 return element_id
 
