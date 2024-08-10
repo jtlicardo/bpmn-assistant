@@ -9,6 +9,4 @@ class OpenAIModels(Enum):
 
 class AnthropicModels(Enum):
     HAIKU = "claude-3-haiku-20240307"
-    SONNET = "claude-3-sonnet-20240229"
-    OPUS = "claude-3-opus-20240229"
     SONNET_3_5 = "claude-3-5-sonnet-20240620"
