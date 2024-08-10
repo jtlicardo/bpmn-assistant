@@ -1,5 +1,3 @@
-import json
-
 from bpmn_assistant.services import BpmnJsonGenerator
 
 
@@ -630,8 +628,6 @@ class TestBpmnJsonGenerator:
 
         result = bpmn_json_generator.create_bpmn_json(bpmn_xml_eg_next_6)
 
-        print(json.dumps(result, indent=4))
-
         expected = [
             {"type": "startEvent", "id": "StartEvent_1"},
             {
@@ -666,10 +662,15 @@ class TestBpmnJsonGenerator:
                         "path": [
                             {
                                 "type": "exclusiveGateway",
-                                "id": "Gateway_091n00s",
+                                "id": "Gateway_130ware",
                                 "label": "Study some more?",
                                 "has_join": False,
                                 "branches": [
+                                    {
+                                        "condition": "No",
+                                        "path": [],
+                                        "next": "Activity_181bobg",
+                                    },
                                     {
                                         "condition": "Yes",
                                         "path": [
@@ -680,11 +681,6 @@ class TestBpmnJsonGenerator:
                                             }
                                         ],
                                         "next": "Activity_0wf2hpg",
-                                    },
-                                    {
-                                        "condition": "No",
-                                        "path": [],
-                                        "next": "Activity_181bobg",
                                     },
                                 ],
                             }

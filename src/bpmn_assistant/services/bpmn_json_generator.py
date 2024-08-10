@@ -56,13 +56,10 @@ class BpmnJsonGenerator:
         if visited is None:
             visited = set()
 
-        if current_id in visited:
+        if current_id in visited or current_id == stop_at:
             return []
 
         visited.add(current_id)
-
-        if current_id == stop_at:
-            return []
 
         current_element = self.elements[current_id]
         result = [current_element]
@@ -101,7 +98,7 @@ class BpmnJsonGenerator:
                 branch_path = self._build_structure_recursive(
                     flow["target"],
                     stop_at=common_branch_endpoint,
-                    visited=visited.copy(),
+                    visited=visited,
                 )
 
                 branch = self._build_eg_branch(
