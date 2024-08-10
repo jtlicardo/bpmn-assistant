@@ -18,7 +18,6 @@ export default {
       selectedModel: "",
       models: [
         {value: "gpt-4o-mini", title: "GPT-4o mini", provider: "openai"},
-        {value: "gpt-4-turbo", title: "GPT-4 Turbo", provider: "openai"},
         {value: "gpt-4o-2024-08-06", title: "GPT-4o", provider: "openai"},
         {
           value: "claude-3-haiku-20240307",
