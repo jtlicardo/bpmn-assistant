@@ -180,28 +180,48 @@ class BpmnJsonGenerator:
                 branch["next"] = flow["target"]
         else:
             last_element = branch_path[-1]
-
             last_element_outgoing_flows = self._get_outgoing_flows(last_element["id"])
 
-            if len(last_element_outgoing_flows) == 1 and (
-                last_element_outgoing_flows[0]["target"] != common_branch_endpoint
-            ):
-                branch["next"] = last_element_outgoing_flows[0]["target"]
+            if last_element["type"] == BPMNElementType.EXCLUSIVE_GATEWAY.value:
+                if not last_element["has_join"]:
+                    # We need to add 'next' to each of the branches
+                    for sub_branch in last_element["branches"]:
+                        sub_flow = next(
+                            flow
+                            for flow in last_element_outgoing_flows
+                            if flow["condition"] == sub_branch["condition"]
+                        )
+                        sub_branch_result = self._build_eg_branch(
+                            sub_branch["path"], common_branch_endpoint, sub_flow
+                        )
+                        sub_branch.update(sub_branch_result)
+                else:
+                    join_id = self._find_common_branch_endpoint(last_element["id"])
+                    join_outgoing_flows = self._get_outgoing_flows(join_id)
+
+                    if len(join_outgoing_flows) != 1:
+                        raise ValueError("Join gateway should have one outgoing flow")
+
+                    join_target = join_outgoing_flows[0]["target"]
+                    if join_target != common_branch_endpoint:
+                        branch["next"] = join_target
+
             elif last_element["type"] == BPMNElementType.PARALLEL_GATEWAY.value:
-
                 join_id = self._find_common_branch_endpoint(last_element["id"])
-
                 join_outgoing_flows = self._get_outgoing_flows(join_id)
 
                 if len(join_outgoing_flows) != 1:
                     raise ValueError("Join gateway should have one outgoing flow")
 
                 join_target = join_outgoing_flows[0]["target"]
-
                 if join_target != common_branch_endpoint:
                     branch["next"] = join_target
-            elif last_element["type"] == BPMNElementType.EXCLUSIVE_GATEWAY.value:
-                print("LAST ELEMENT IS EXCLUSIVE GATEWAY")
+
+            elif (
+                len(last_element_outgoing_flows) == 1
+                and last_element_outgoing_flows[0]["target"] != common_branch_endpoint
+            ):
+                branch["next"] = last_element_outgoing_flows[0]["target"]
 
         return branch
 
