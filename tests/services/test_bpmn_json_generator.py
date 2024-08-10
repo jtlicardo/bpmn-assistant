@@ -1,3 +1,5 @@
+import json
+
 from bpmn_assistant.services import BpmnJsonGenerator
 
 
@@ -616,6 +618,77 @@ class TestBpmnJsonGenerator:
                             }
                         ],
                         "next": "Activity_1seg49t",
+                    },
+                ],
+            },
+        ]
+
+        assert result == expected
+
+    def test_create_bpmn_json_eg_next_6(self, bpmn_xml_eg_next_6):
+        bpmn_json_generator = BpmnJsonGenerator()
+
+        result = bpmn_json_generator.create_bpmn_json(bpmn_xml_eg_next_6)
+
+        print(json.dumps(result, indent=4))
+
+        expected = [
+            {"type": "startEvent", "id": "StartEvent_1"},
+            {
+                "type": "task",
+                "id": "Activity_181bobg",
+                "label": "Enter exam room",
+            },
+            {
+                "type": "task",
+                "id": "Activity_157rflw",
+                "label": "Take test",
+            },
+            {
+                "type": "exclusiveGateway",
+                "id": "Gateway_091n00s",
+                "label": "Score more than 50%?",
+                "has_join": False,
+                "branches": [
+                    {
+                        "condition": "Yes",
+                        "path": [
+                            {
+                                "type": "task",
+                                "id": "Activity_0wf2hpg",
+                                "label": "Enter the grade",
+                            },
+                            {"type": "endEvent", "id": "Event_1jt0s40"},
+                        ],
+                    },
+                    {
+                        "condition": "No",
+                        "path": [
+                            {
+                                "type": "exclusiveGateway",
+                                "id": "Gateway_091n00s",
+                                "label": "Study some more?",
+                                "has_join": False,
+                                "branches": [
+                                    {
+                                        "condition": "Yes",
+                                        "path": [
+                                            {
+                                                "type": "task",
+                                                "id": "Activity_1vjxxgc",
+                                                "label": "Study",
+                                            }
+                                        ],
+                                        "next": "Activity_0wf2hpg",
+                                    },
+                                    {
+                                        "condition": "No",
+                                        "path": [],
+                                        "next": "Activity_181bobg",
+                                    },
+                                ],
+                            }
+                        ],
                     },
                 ],
             },
