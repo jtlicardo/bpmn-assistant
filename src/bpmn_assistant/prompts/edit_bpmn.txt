@@ -2,33 +2,24 @@
 
 ## Tasks
 
-### Tasks (no specific type)
+Specify the task type in the 'type' field. Only "task", "userTask" and "serviceTask" options are supported.
 
 ```json
 {
-    "type": String = "task",
+    "type": String = "task" | "userTask" | "serviceTask"
     "id": String,
-    "label": String // short task description
+    "label": String, // short task description
 }
 ```
 
-### User tasks
+## Events
+
+Specify the event type in the 'type' field. Only "startEvent" and "endEvent" options are supported.
 
 ```json
 {
-    "type": String = "userTask",
+    "type": String = "startEvent" | "endEvent",
     "id": String,
-    "label": String // short task description
-}
-```
-
-### Service tasks
-
-```json
-{
-    "type": String = "serviceTask",
-    "id": String,
-    "label": String // short task description
 }
 ```
 
@@ -36,26 +27,33 @@
 
 ### Exclusive gateway
 
+Each branch has a condition and a path of elements that are executed if the condition is met.
+If the branch does not lead to the next element in the process (for example, it goes back to a previous element), specify the next element id.
+If the branch leads to the next element in the process, do not specify the next element id.
+
 ```json
 {
     "type": String = "exclusiveGateway",
     "id": String,
     "label": String, // label for the gateway (e.g. "Professor agrees?")
+    "has_join": Boolean, // whether the gateway contains a join element that merges the branches
     "branches": [
         {
             "condition": String, // condition for the branch
-            "path": [] // array of elements that are executed if the condition is met
+            "path": [], // array of elements that are executed if the condition is met (can be empty)
+            "next": String, // OPTIONAL: if the branch does not lead to the next element in the process, specify the next element id
         },
         {
-            "condition": String, // condition for the branch
-            "path": [] // array of elements that are executed if the condition is met
+            "condition": String,
+            "path": [],
+            "next": String, // OPTIONAL
         },
-        ...
-    ]
+        // ... more branches
+    ],
 }
 ```
 
-### Parallel gateway (fork)
+### Parallel gateway
 
 ```json
 {
@@ -64,55 +62,60 @@
     "branches": [
         [], // array of elements that are executed in parallel with the next array
         [], // array of elements that are executed in parallel with the previous array
-        ...
-    ]
-}
-```
-
-### Parallel gateway (join)
-
-```json
-{
-    "type": String = "parallelGateway",
-    "id": String
-}
-
-## Events
-
-### Start event
-
-```json
-{
-    "type": String = "startEvent",
-    "id": String
-}
-```
-
-### End event
-
-```json
-{
-    "type": String = "endEvent",
-    "id": String
+        // ... more arrays
+    ],
 }
 ```
 
 ---
 
-Your task is to edit the JSON with a set of predefined functions.
+# Process editing functions
 
-The functions for editing the process are the following:
-- `delete_element(element_id)` - element_id is the unique identifier of an existing element in the process
-- `redirect_flow(element_id, next_id)` - element_id is the unique identifier of an existing element in the process, next_id is the unique identifier of the next element to which the flow should be redirected
-- `add_element(element, before_id=None, after_id=None)` - element is an object representing a new element to be added to the process, before_id and after_id are the unique identifiers of the elements before and after which the new element should be added, only one of them should be provided
-- `move_element(element_id, before_id=None, after_id=None)` - element_id is the unique identifier of an existing element in the process, before_id and after_id are the unique identifiers of the elements before and after which the element should be moved, only one of them should be provided
-- `update_element(new_element)` - new_element is an object representing the updated element - the new_element's id should match the id of the element to be updated
+- `delete_element(element_id)`
+- `redirect_flow(element_id, next_id)`
+- `add_element(element, before_id=None, after_id=None)`
+- `move_element(element_id, before_id=None, after_id=None)`
+- `update_element(new_element)`
 
-Provide one function at a time to update the process, along with the arguments for the function call.
+1. `delete_element` - Deletes an element from the process.
+
+**Parameters:**
+- `element_id`: The id of an existing element in the process
+
+2. `redirect_flow` - Redirects the flow from one element to another.
+
+**Parameters:**
+- `element_id`: The id of an existing element in the process
+- `next_id`: The id of the next element to which the flow should be redirected
+
+3. `add_element` - Adds a new element to the process.
+
+**Parameters:**
+- `element`: An object representing a new element to be added to the process
+- `before_id`: (Optional) The id of the element before which the new element should be added
+- `after_id`: (Optional) The id of the element after which the new element should be added
+
+**Note:** Only one of `before_id` or `after_id` should be provided.
+
+4. `move_element` - Moves an existing element to a new position in the process.
+
+**Parameters:**
+- `element_id`: The id of an existing element in the process
+- `before_id`: (Optional) The id of the element before which the element should be moved
+- `after_id`: (Optional) The id of the element after which the element should be moved
+
+**Note:** Only one of `before_id` or `after_id` should be provided.
+
+5. `update_element` - Updates an existing element in the process.
+
+**Parameters:**
+- `new_element`: An object representing the updated element
+
+**Note:** The `new_element`'s id should match the id of the element to be updated.
+
+---
 
 # Example function calls
-
-Note: although the process contains 'next' keys in the elements, you should not output them in your response. They will be added automatically.
 
 ```json
 {
@@ -162,12 +165,16 @@ Note: although the process contains 'next' keys in the elements, you should not 
 
 ---
 
-The JSON representation of the process:
+# Your task
+
+The JSON representation of the process
 
 ```json
 ::process
 ```
 
 The requested change to the process: "::change_request"
+
+Provide one function at a time to update the process, along with the arguments for the function call.
 
 Start with the first function call.
