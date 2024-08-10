@@ -187,15 +187,21 @@ class BpmnJsonGenerator:
                 last_element_outgoing_flows[0]["target"] != common_branch_endpoint
             ):
                 branch["next"] = last_element_outgoing_flows[0]["target"]
-            elif len(last_element_outgoing_flows) > 1:
-                last_element_id = self._find_common_branch_endpoint(last_element["id"])
+            elif last_element["type"] == BPMNElementType.PARALLEL_GATEWAY.value:
 
-                last_element_outgoing_flows = self._get_outgoing_flows(last_element_id)
+                join_id = self._find_common_branch_endpoint(last_element["id"])
 
-                if len(last_element_outgoing_flows) == 1 and (
-                    last_element_outgoing_flows[0]["target"] != common_branch_endpoint
-                ):
-                    branch["next"] = last_element_outgoing_flows[0]["target"]
+                join_outgoing_flows = self._get_outgoing_flows(join_id)
+
+                if len(join_outgoing_flows) != 1:
+                    raise ValueError("Join gateway should have one outgoing flow")
+
+                join_target = join_outgoing_flows[0]["target"]
+
+                if join_target != common_branch_endpoint:
+                    branch["next"] = join_target
+            elif last_element["type"] == BPMNElementType.EXCLUSIVE_GATEWAY.value:
+                print("LAST ELEMENT IS EXCLUSIVE GATEWAY")
 
         return branch
 
