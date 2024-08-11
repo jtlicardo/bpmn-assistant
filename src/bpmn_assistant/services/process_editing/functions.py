@@ -39,9 +39,9 @@ def delete_element(process: list[dict], element_id: str) -> dict:
 
 
 def redirect_branch(process: list[dict], branch_condition: str, next_id: str) -> dict:
-    process_copy = deepcopy(process)
+    position = find_branch_position(process, branch_condition)
 
-    position = find_branch_position(process_copy, branch_condition)
+    process_copy = deepcopy(process)
 
     current = process_copy
 
@@ -135,11 +135,6 @@ def move_element(
 
 
 def update_element(process: list[dict], new_element: dict) -> dict:
-    """
-    Update an element in the process. The element does not have to contain the 'next' field, as it will be
-    automatically set to the next element in the process.
-    The id of the element has to exist in the process.
-    """
     ids = get_all_ids(process)
 
     if new_element["id"] not in ids:
@@ -152,43 +147,20 @@ def update_element(process: list[dict], new_element: dict) -> dict:
     ]:
         raise GatewayUpdateError("Cannot update a gateway element")
 
+    position = find_position(process, before_id=new_element["id"])
+
     process_copy = deepcopy(process)
 
-    position = find_position(process_copy, before_id=new_element["id"])
+    current = process_copy
+    for path_element in position.path[:-1]:
+        current = current[path_element]
 
-    element_to_update = None
-
-    # If path is not empty list, we need to find the list that the path is referring to
     if position.path:
-        current = process_copy
-        for i, path_element in enumerate(position.path):
-            is_last_path_element = i == len(position.path) - 1
-            if is_last_path_element:
-                # Enter into the final segment of the path
-                current = current[path_element]
-
-                element_to_update = current[position.index]
-
-                # Copy the 'next' field of the element to update
-                new_element["next"] = element_to_update["next"]
-
-                # Update the element
-                current[position.index] = new_element
-            else:
-                # We're still navigating the path
-                current = current[path_element]
+        target_list = current[position.path[-1]]
     else:
-        # If path is empty, we're updating at the top level
-        element_to_update = process_copy[position.index]
+        target_list = current
 
-        # Copy the 'next' field of the element to update
-        new_element["next"] = element_to_update["next"]
-
-        # Update the element
-        process_copy[position.index] = new_element
-
-    if element_to_update is None:
-        raise ElementNotFoundException("Could not find the element to update")
+    target_list[position.index] = new_element
 
     return {
         "process": process_copy,
