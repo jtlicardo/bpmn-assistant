@@ -34,7 +34,6 @@ class BpmnJsonGenerator:
         process_element = self._find_process_element(root)
         self._get_elements_and_flows(process_element)
         self._build_process_structure()
-
         return self.process
 
     def _build_process_structure(self):

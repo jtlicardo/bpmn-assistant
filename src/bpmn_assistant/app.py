@@ -33,7 +33,6 @@ app.add_middleware(
 
 bpmn_modeling_service = BpmnModelingService()
 bpmn_xml_generator = BpmnXmlGenerator()
-bpmn_json_generator = BpmnJsonGenerator()
 
 
 @app.post("/bpmn_to_json")
@@ -42,6 +41,7 @@ def _bpmn_to_json(request: BpmnToJsonRequest) -> JSONResponse:
     Convert the BPMN XML to its JSON representation
     """
     try:
+        bpmn_json_generator = BpmnJsonGenerator()
         result = bpmn_json_generator.create_bpmn_json(request.bpmn_xml)
         return JSONResponse(content=result)
     except Exception as e:

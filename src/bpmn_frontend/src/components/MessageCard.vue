@@ -23,7 +23,10 @@ export default {
       return this.role === "user" ? "You" : "BPMN Assistant";
     },
     formattedContent() {
-      return this.content.replace(/\n- /g, "<br>• ").replace(/\n/g, "<br>");
+      return this.content
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\n- /g, "<br>• ")
+        .replace(/\n/g, "<br>");
     },
   },
   methods: {
