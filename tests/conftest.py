@@ -264,6 +264,64 @@ def convert_message_history(message_history):
 
 
 @pytest.fixture
+def define_change_request_messages_1():
+    messages = [
+        {
+            "role": "user",
+            "content": "Can you help me create a BPMN process for a university exam?",
+        },
+        {
+            "role": "assistant",
+            "content": "Sure! What are the steps involved in the process?",
+        },
+        {
+            "role": "user",
+            "content": "The process involves logging in to the university's website, taking an online exam, "
+            "grading the exam, and entering the grade.",
+        },
+        {
+            "role": "assistant",
+            "content": "I created the process! You can see it in the right panel.",
+        },
+        {
+            "role": "user",
+            "content": "Can you combine the tasks for logging in to the university website and taking an online exam?",
+        },
+    ]
+
+    return convert_message_history(messages)
+
+
+@pytest.fixture
+def define_change_request_messages_2():
+    messages = [
+        {
+            "role": "user",
+            "content": "Can you help me create a BPMN process for a university exam?",
+        },
+        {
+            "role": "assistant",
+            "content": "Sure! What are the steps involved in the process?",
+        },
+        {
+            "role": "user",
+            "content": "The process involves logging in to the university's website, taking an online exam, "
+            "grading the exam, and entering the grade.",
+        },
+        {
+            "role": "assistant",
+            "content": "I created the process! You can see it in the right panel.",
+        },
+        {
+            "role": "user",
+            "content": "After entering the grade, the professor should be notified.",
+        },
+    ]
+
+    return convert_message_history(messages)
+
+
+@pytest.fixture
 def message_history_create_bpmn():
     """
     Description: A message history that contains a conversation between a user and an assistant.

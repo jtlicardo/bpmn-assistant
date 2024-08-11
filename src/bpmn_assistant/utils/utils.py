@@ -14,23 +14,35 @@ from bpmn_assistant.core.enums import (
 def prepare_prompt(prompt_template, **kwargs):
     """
     Replace the placeholders in the prompt template with the given values.
-
     Args:
         prompt_template (str): The prompt template.
         **kwargs: Keyword arguments where keys are variable names (without '::')
                   and values are the replacement strings.
-
     Returns:
         str: The prompt
     """
-
-    # TODO: maybe it would be good to check if any passed variable is not in the prompt_template
-
     prompt = prompt_template
+
+    # Extract variables from the template
+    template_parts = prompt_template.split("::")
+    template_variables = [part.split()[0] for part in template_parts[1:]]
+
+    # Check for unused variables
+    passed_variables = set(kwargs.keys())
+    template_variable_set = set(template_variables)
+    unused_variables = passed_variables - template_variable_set
+
+    if unused_variables:
+        raise ValueError(
+            f"The following variables were passed but not found in the template: {', '.join(unused_variables)}"
+        )
 
     # Replace each variable with its corresponding value
     for variable, value in kwargs.items():
-        prompt = prompt.replace(f"::{variable}", value)
+        placeholder = f"::{variable}"
+        if placeholder not in prompt:
+            raise ValueError(f"Variable '{variable}' not found in the prompt template.")
+        prompt = prompt.replace(placeholder, value)
 
     return prompt
 
