@@ -6,15 +6,7 @@ class ElementNotFoundException(ProcessException):
     pass
 
 
-class OnlyElementDeletionError(ProcessException):
-    pass
-
-
 class ElementAlreadyExistsError(ProcessException):
-    pass
-
-
-class InvalidRedirectionError(ProcessException):
     pass
 
 

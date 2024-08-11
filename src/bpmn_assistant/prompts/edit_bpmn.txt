@@ -72,7 +72,7 @@ If the branch leads to the next element in the process, do not specify the next 
 # Process editing functions
 
 - `delete_element(element_id)`
-- `redirect_flow(element_id, next_id)`
+- `redirect_branch(branch_condition, next_id)`
 - `add_element(element, before_id=None, after_id=None)`
 - `move_element(element_id, before_id=None, after_id=None)`
 - `update_element(new_element)`
@@ -82,10 +82,10 @@ If the branch leads to the next element in the process, do not specify the next 
 **Parameters:**
 - `element_id`: The id of an existing element in the process
 
-2. `redirect_flow` - Redirects the flow from one element to another.
+2. `redirect_branch` - Redirects the flow of a branch in an exclusive gateway.
 
 **Parameters:**
-- `element_id`: The id of an existing element in the process
+- `branch_condition`: The condition of the branch to be redirected (needs to match the condition in the process)
 - `next_id`: The id of the next element to which the flow should be redirected
 
 3. `add_element` - Adds a new element to the process.
@@ -155,9 +155,9 @@ If the branch leads to the next element in the process, do not specify the next 
 
 ```json
 {
-  "function": "redirect_flow",
+  "function": "redirect_branch",
   "arguments": {
-    "element_id": "task2",
+    "branch_condition": "Product is out of stock",
     "next_id": "task3"
   }
 }

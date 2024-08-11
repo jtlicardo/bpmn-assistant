@@ -2,7 +2,7 @@ import pytest
 
 from bpmn_assistant.services.process_editing import (
     delete_element,
-    redirect_flow,
+    redirect_branch,
     add_element,
     move_element,
     update_element,
@@ -11,66 +11,29 @@ from bpmn_assistant.services.process_editing import (
 
 class TestProcessEditingFunctions:
     def test_delete_element(self, order_process_fixture):
-
-        # Delete task1
         result = delete_element(order_process_fixture, "task1")
-        updated_process = result["process"]
+        process = result["process"]
+        assert any(element["id"] == "task1" for element in process) is False
 
-        # Assert that task1 is no longer in the process
-        assert any(element["id"] == "task1" for element in updated_process) == False
+    def test_delete_element_2(self, order_process_fixture):
+        result = delete_element(order_process_fixture, "task2")
+        process = result["process"]
+        updated_segment = process[2]["branches"][0]["path"]
+        assert updated_segment == []
 
-        # Assert that the next field of start1 is now exclusive1
-        start1 = next(
-            element for element in updated_process if element["id"] == "start1"
-        )
-        assert start1["next"] == "exclusive1"
-
-    def test_delete_element_inside_gateway(self, order_process_fixture):
-
-        # Delete task4
+    def test_delete_element_3(self, order_process_fixture):
         result = delete_element(order_process_fixture, "task4")
+        process = result["process"]
+        updated_segment = process[2]["branches"][1]["path"][0]["branches"][0]["path"]
+        assert any(element["id"] == "task4" for element in updated_segment) is False
+
+    def test_redirect_flow(self, order_process_fixture):
+        result = redirect_branch(
+            order_process_fixture, "Payment succeeds", "exclusive1"
+        )
         updated_process = result["process"]
-
-        updated_segment = updated_process[2]["branches"][1]["path"][0]["branches"][0][
-            "path"
-        ]
-
-        task3 = updated_segment[0]
-
-        # Assert that task4 is no longer in the updated segment
-        assert any(element["id"] == "task4" for element in updated_segment) == False
-
-        # Assert that the next field of task3 is now end1
-        assert task3["next"] == "end1"
-
-    def test_redirect_flow_inside_gateway(self, order_process_fixture):
-
-        # Redirect the flow from task4 to exclusive1
-        result = redirect_flow(order_process_fixture, "task4", "exclusive1")
-        updated_process = result["process"]
-
-        updated_segment = updated_process[2]["branches"][1]["path"][0]["branches"][0][
-            "path"
-        ]
-
-        redirected_element = updated_segment[1]
-
-        # Assert that the next field of task4 is now exclusive1
-        assert redirected_element["next"] == "exclusive1"
-
-    def test_redirect_flow_inside_gateway_non_last_element_should_raise_exception(
-        self, order_process_fixture
-    ):
-        with pytest.raises(Exception) as e:
-            redirect_flow(order_process_fixture, "task3", "exclusive1")
-
-        assert str(e.value) == "Cannot redirect a non-last element in the list"
-
-    def test_redirect_end_event_should_raise_exception(self, order_process_fixture):
-        with pytest.raises(Exception) as e:
-            redirect_flow(order_process_fixture, "end1", "start1")
-
-        assert str(e.value) == "Cannot redirect an end event"
+        updated_branch = updated_process[2]["branches"][1]["path"][0]["branches"][0]
+        assert updated_branch["next"] == "exclusive1"
 
     def test_add_element(self, order_process_fixture):
 
