@@ -41,12 +41,12 @@ If the branch leads to the next element in the process, do not specify the next 
         {
             "condition": String, // condition for the branch
             "path": [], // array of elements that are executed if the condition is met (can be empty)
-            "next": String, // OPTIONAL: if the branch does not lead to the next element in the process, specify the next element id
+            "next": String | null, // OPTIONAL: ID of the next element if not following default sequence. Omit or set to null if following default sequence.
         },
         {
             "condition": String,
             "path": [],
-            "next": String, // OPTIONAL
+            "next": String | null, // OPTIONAL: as above
         },
         // ... more branches
     ],
@@ -68,6 +68,8 @@ If the branch leads to the next element in the process, do not specify the next 
 ```
 
 # Process examples
+
+The order of execution in the BPMN process is determined by the sequence of elements in the top-level "process" array. Elements are executed in the order they appear in this array, from first to last.
 
 Textual description:
 "The student sends an email to the professor. The professor receives the email. If the professor agrees with the proposal, he replies to the student."
