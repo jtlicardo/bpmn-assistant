@@ -405,7 +405,7 @@ The JSON representation of the process
 ::process
 ```
 
-The requested change to the process: "::change_request"
+The requested change to the process: ::change_request
 
 Provide one function at a time to update the process, along with the arguments for the function call.
 
