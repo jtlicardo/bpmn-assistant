@@ -1,9 +1,9 @@
 from copy import deepcopy
+from typing import Optional
 
 from bpmn_assistant.core.exceptions import (
     ElementNotFoundException,
     ElementAlreadyExistsError,
-    InvalidEndElementError,
     GatewayUpdateError,
 )
 from .helpers import find_position, get_all_ids, find_branch_position
@@ -58,20 +58,11 @@ def redirect_branch(process: list[dict], branch_condition: str, next_id: str) ->
     }
 
 
-def add_element(
-    process: list[dict], element: dict, before_id=None, after_id=None
-) -> dict:
+def validate_params(ids: list[str], before_id: Optional[str], after_id: Optional[str]):
     """
-    Add an element to the process. The element doesn't have to contain a 'next' field, as it will be automatically
-    set to the next element in the process. If the element is an end event, the 'next' field will be set to None.
+    Validate the parameters for placing an element within the process.
     """
-    ids = get_all_ids(process)
-
-    if element["id"] in ids:
-        raise ElementAlreadyExistsError(
-            f"Element with id {element['id']} already exists"
-        )
-    elif before_id is not None and before_id not in ids:
+    if before_id is not None and before_id not in ids:
         raise ElementNotFoundException(f"Element with id {before_id} does not exist")
     elif after_id is not None and after_id not in ids:
         raise ElementNotFoundException(f"Element with id {after_id} does not exist")
@@ -80,56 +71,37 @@ def add_element(
     elif before_id is None and after_id is None:
         raise ValueError("At least one of before_id and after_id must be specified")
 
+
+def add_element(
+    process: list[dict],
+    element: dict,
+    before_id: Optional[str] = None,
+    after_id: Optional[str] = None,
+) -> dict:
+    ids = get_all_ids(process)
+
+    if element["id"] in ids:
+        raise ElementAlreadyExistsError(
+            f"Element with id {element['id']} already exists"
+        )
+
+    validate_params(ids, before_id, after_id)
+
     position = find_position(process, before_id=before_id, after_id=after_id)
 
     process_copy = deepcopy(process)
 
-    # If path is not empty list, we need to find the list that the path is referring to
-    if position.path:
-        current = process_copy
-        for i, path_element in enumerate(position.path):
-            is_last_path_element = i == len(position.path) - 1
-            if is_last_path_element:
-                # Enter into the final segment of the path
-                current = current[path_element]
-                # Insert the new element
-                current.insert(position.index, element)
-            else:
-                # We're still navigating the path
-                current = current[path_element]
-    else:
-        # If path is empty, we're inserting at the top level
-        process_copy.insert(position.index, element)
+    current = process_copy
 
-    # Find the segment we need to update further
-    if position.path:
-        segment_to_update = process_copy
-        for path_element in position.path:
-            segment_to_update = segment_to_update[path_element]
-    else:
-        segment_to_update = process_copy
+    for path_element in position.path[:-1]:
+        current = current[path_element]
 
-    # If the element is not the first element in the segment
-    if position.index > 0:
-        # Find the previous element
-        previous_element = segment_to_update[position.index - 1]
-        # Update the new element's next field
-        element["next"] = previous_element["next"]
-        # Set the previous element's next field to the new element's id
-        previous_element["next"] = element["id"]
-    # If the element is the first element in the segment, we have no previous element to update
-    # We only need to update the next field of the new element
+    if position.path:
+        target_list = current[position.path[-1]]
     else:
-        if position.index < len(segment_to_update) - 1:
-            next_element = segment_to_update[position.index + 1]
-            element["next"] = next_element["id"]
-        else:
-            if element["type"] == "endEvent":
-                element["next"] = None
-            else:
-                raise InvalidEndElementError(
-                    "Trying to add an element at the end that is not an end event"
-                )
+        target_list = current
+
+    target_list.insert(position.index, element)
 
     return {
         "process": process_copy,
@@ -138,20 +110,17 @@ def add_element(
 
 
 def move_element(
-    process: list[dict], element_id: str, before_id=None, after_id=None
+    process: list[dict],
+    element_id: str,
+    before_id: Optional[str] = None,
+    after_id: Optional[str] = None,
 ) -> dict:
     ids = get_all_ids(process)
 
     if element_id not in ids:
         raise ElementNotFoundException(f"Element with id {element_id} does not exist")
-    elif before_id is not None and before_id not in ids:
-        raise ElementNotFoundException(f"Element with id {before_id} does not exist")
-    elif after_id is not None and after_id not in ids:
-        raise ElementNotFoundException(f"Element with id {after_id} does not exist")
-    elif before_id is not None and after_id is not None:
-        raise ValueError("Only one of before_id and after_id can be specified")
-    elif before_id is None and after_id is None:
-        raise ValueError("At least one of before_id and after_id must be specified")
+
+    validate_params(ids, before_id, after_id)
 
     process_copy, removed_element = delete_element(process, element_id).values()
 

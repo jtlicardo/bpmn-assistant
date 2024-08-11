@@ -12,7 +12,3 @@ class ElementAlreadyExistsError(ProcessException):
 
 class GatewayUpdateError(ProcessException):
     pass
-
-
-class InvalidEndElementError(ProcessException):
-    pass
