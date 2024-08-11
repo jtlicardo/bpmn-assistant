@@ -10,39 +10,37 @@ from bpmn_assistant.services.process_editing import (
 
 
 class TestProcessEditingFunctions:
-    def test_delete_element(self, order_process_fixture):
-        result = delete_element(order_process_fixture, "task1")
+    def test_delete_element(self, order_process):
+        result = delete_element(order_process, "task1")
         process = result["process"]
         assert any(element["id"] == "task1" for element in process) is False
 
-    def test_delete_element_2(self, order_process_fixture):
-        result = delete_element(order_process_fixture, "task2")
+    def test_delete_element_2(self, order_process):
+        result = delete_element(order_process, "task2")
         process = result["process"]
         updated_segment = process[2]["branches"][0]["path"]
         assert updated_segment == []
 
-    def test_delete_element_3(self, order_process_fixture):
-        result = delete_element(order_process_fixture, "task4")
+    def test_delete_element_3(self, order_process):
+        result = delete_element(order_process, "task4")
         process = result["process"]
         updated_segment = process[2]["branches"][1]["path"][0]["branches"][0]["path"]
         assert any(element["id"] == "task4" for element in updated_segment) is False
 
-    def test_redirect_flow(self, order_process_fixture):
-        result = redirect_branch(
-            order_process_fixture, "Payment succeeds", "exclusive1"
-        )
+    def test_redirect_flow(self, order_process):
+        result = redirect_branch(order_process, "Payment succeeds", "exclusive1")
         updated_process = result["process"]
         updated_branch = updated_process[2]["branches"][1]["path"][0]["branches"][0]
         assert updated_branch["next"] == "exclusive1"
 
-    def test_add_element(self, order_process_fixture):
+    def test_add_element(self, order_process):
         new_task = {
             "type": "task",
             "id": "task6",
             "label": "Pack order",
         }
 
-        result = add_element(order_process_fixture, new_task, after_id="task3")
+        result = add_element(order_process, new_task, after_id="task3")
         updated_process = result["process"]
         exclusive1 = next(el for el in updated_process if el["id"] == "exclusive1")
         updated_segment = exclusive1["branches"][1]["path"][0]["branches"][0]["path"]
@@ -50,7 +48,7 @@ class TestProcessEditingFunctions:
         assert task6["id"] == "task6"
 
     def test_add_element_raises_exception_if_element_id_already_exists(
-        self, order_process_fixture
+        self, order_process
     ):
         new_task = {
             "type": "task",
@@ -58,11 +56,11 @@ class TestProcessEditingFunctions:
             "label": "Pack order",
         }
         with pytest.raises(Exception) as e:
-            add_element(order_process_fixture, new_task)
+            add_element(order_process, new_task)
         assert str(e.value) == "Element with id task1 already exists"
 
-    def test_move_element(self, order_process_fixture):
-        result = move_element(order_process_fixture, "task4", before_id="task3")
+    def test_move_element(self, order_process):
+        result = move_element(order_process, "task4", before_id="task3")
         updated_process = result["process"]
         updated_segment = updated_process[2]["branches"][1]["path"][0]["branches"][0][
             "path"
@@ -72,7 +70,7 @@ class TestProcessEditingFunctions:
         assert task4["id"] == "task4"
         assert task3["id"] == "task3"
 
-    def test_update_element(self, order_process_fixture):
+    def test_update_element(self, order_process):
         new_type = "serviceTask"
         new_label = "Send email to customer"
         new_element = {
@@ -81,7 +79,7 @@ class TestProcessEditingFunctions:
             "label": new_label,
         }
 
-        result = update_element(order_process_fixture, new_element)
+        result = update_element(order_process, new_element)
         updated_process = result["process"]
         updated_segment = updated_process[2]["branches"][1]["path"][0]["branches"][0][
             "path"
@@ -90,14 +88,12 @@ class TestProcessEditingFunctions:
         assert task4["label"] == new_label
         assert task4["type"] == new_type
 
-    def test_update_element_raises_exception_if_element_is_gateway(
-        self, order_process_fixture
-    ):
+    def test_update_element_raises_exception_if_element_is_gateway(self, order_process):
         new_element = {
             "type": "exclusiveGateway",
             "id": "exclusive1",
             "label": "a",
         }
         with pytest.raises(Exception) as e:
-            update_element(order_process_fixture, new_element)
+            update_element(order_process, new_element)
         assert str(e.value) == "Cannot update a gateway element"

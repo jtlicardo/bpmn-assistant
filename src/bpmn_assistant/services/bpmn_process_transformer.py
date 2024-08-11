@@ -60,6 +60,22 @@ class BpmnProcessTransformer:
                 elements.extend(branch_structure["elements"])
                 flows.extend(branch_structure["flows"])
 
+                if branch.get("next"):
+                    source_ref = element["id"]
+                    condition = branch["condition"]
+                    if branch_structure["elements"]:
+                        source_ref = branch_structure["elements"][-1]["id"]
+                        condition = None
+
+                    flows.append(
+                        {
+                            "id": f"{source_ref}-{branch['next']}",
+                            "sourceRef": source_ref,
+                            "targetRef": branch["next"],
+                            "condition": condition,
+                        }
+                    )
+
                 # Add the flow from the exclusive gateway to the first element in the branch
                 first_element = (
                     branch_structure["elements"][0]

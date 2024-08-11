@@ -23,7 +23,39 @@ def openai_facade():
 
 
 @pytest.fixture
-def order_process_fixture():
+def empty_gateway_path_process():
+    """
+    Description: A process that contains an exclusive gateway with an empty path.
+    """
+    return [
+        {"type": "startEvent", "id": "start"},
+        {"type": "task", "id": "task1", "label": "Perform a simple task"},
+        {"type": "task", "id": "task2", "label": "Perform a second task"},
+        {
+            "type": "exclusiveGateway",
+            "id": "exclusive1",
+            "label": "Decision Point",
+            "has_join": False,
+            "branches": [
+                {
+                    "condition": "Condition A",
+                    "path": [
+                        {
+                            "type": "task",
+                            "id": "task3",
+                            "label": "Perform a third task",
+                        }
+                    ],
+                },
+                {"condition": "Condition B", "path": [], "next": "end"},
+            ],
+        },
+        {"type": "endEvent", "id": "end"},
+    ]
+
+
+@pytest.fixture
+def order_process():
     """
     Description: An ordering process that contains 2 exclusive gateways, one
     of which is nested inside the other.
@@ -96,7 +128,7 @@ def order_process_fixture():
 
 
 @pytest.fixture
-def procurement_process_fixture():
+def procurement_process():
     """
     Description: A procurement process that involves two parallel branches.
     """
@@ -137,7 +169,7 @@ def procurement_process_fixture():
 
 
 @pytest.fixture
-def linear_process_fixture():
+def linear_process():
     """
     Description: A linear process that involves a sequence of tasks.
     """
@@ -169,7 +201,7 @@ def linear_process_fixture():
 
 
 @pytest.fixture
-def pg_inside_eg_fixture():
+def pg_inside_eg_process():
     """
     Description: A process that includes an exclusive gateway, with one of the
     branches containing a parallel gateway.
