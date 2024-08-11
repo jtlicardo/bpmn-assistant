@@ -124,9 +124,6 @@ def move_element(
 
     process_copy, removed_element = delete_element(process, element_id).values()
 
-    # Remove the 'next' field from the removed element
-    removed_element.pop("next", None)
-
     process_copy, added_element = add_element(
         process_copy, removed_element, before_id, after_id
     ).values()

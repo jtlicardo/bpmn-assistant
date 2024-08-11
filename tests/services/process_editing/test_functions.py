@@ -52,39 +52,25 @@ class TestProcessEditingFunctions:
     def test_add_element_raises_exception_if_element_id_already_exists(
         self, order_process_fixture
     ):
-
         new_task = {
             "type": "task",
             "id": "task1",
             "label": "Pack order",
         }
-
         with pytest.raises(Exception) as e:
             add_element(order_process_fixture, new_task)
-
         assert str(e.value) == "Element with id task1 already exists"
 
     def test_move_element(self, order_process_fixture):
-
         result = move_element(order_process_fixture, "task4", before_id="task3")
         updated_process = result["process"]
-
         updated_segment = updated_process[2]["branches"][1]["path"][0]["branches"][0][
             "path"
         ]
-
-        # Assert that the order of the elements in the segment is now task4, task3
         task4 = updated_segment[0]
         task3 = updated_segment[1]
-
         assert task4["id"] == "task4"
         assert task3["id"] == "task3"
-
-        # Assert that the next field of task4 is now task3
-        assert task4["next"] == "task3"
-
-        # Assert that the next field of task3 is now end1
-        assert task3["next"] == "end1"
 
     def test_update_element(self, order_process_fixture):
 
