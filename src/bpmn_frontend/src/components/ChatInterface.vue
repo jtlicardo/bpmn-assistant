@@ -52,7 +52,7 @@
           label="Message BPMN Assistant..."
           v-model="currentInput"
           :disabled="isLoading"
-          :counter="1000"
+          :counter="10000"
           rows="6"
           @keydown.enter.prevent="handleKeyDown"
           class="mx-2"
@@ -158,7 +158,7 @@ export default {
       }
     },
     async handleMessageSubmit() {
-      if (!this.currentInput.trim() || this.currentInput.length > 1000) {
+      if (!this.currentInput.trim() || this.currentInput.length > 10000) {
         return;
       }
 
