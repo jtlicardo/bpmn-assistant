@@ -15,6 +15,9 @@
       @dragover.prevent
       @drop="handleDrop"
     ></div>
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3000">
+      {{ snackbar.text }}
+    </v-snackbar>
   </div>
 </template>
 
@@ -36,6 +39,11 @@ export default {
       bpmnXml: "",
       process: null, // Process in JSON format
       bpmnViewer: null,
+      snackbar: {
+        show: false,
+        text: "",
+        color: "success",
+      },
     };
   },
   mounted() {
@@ -60,6 +68,11 @@ export default {
     }
   },
   methods: {
+    showSnackbar(text, color = "success") {
+      this.snackbar.text = text;
+      this.snackbar.color = color;
+      this.snackbar.show = true;
+    },
     async handleDrop(event) {
       event.preventDefault(); // Prevent the browser from default file handling
       if (event.dataTransfer.items) {
@@ -101,8 +114,13 @@ export default {
 
         this.process = await response.json();
         console.log("BPMN JSON created successfully:", this.process);
+        this.showSnackbar("BPMN successfully uploaded", "success");
       } catch (error) {
         console.error("Error creating BPMN JSON:", error);
+        this.showSnackbar(
+          "There was a problem while loading the BPMN file",
+          "error"
+        );
       }
     },
     async handleBpmnXml(bpmnXmlValue) {
