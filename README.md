@@ -57,7 +57,7 @@ docker-compose up --build
 
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
-- [Anthropic API key](https://console.anthropic.com/) or [OpenAI API key](https://platform.openai.com/docs/quickstart)
+- [OpenAI API key](https://platform.openai.com/docs/quickstart) or [Anthropic API key](https://console.anthropic.com/)
 
 ## Supported models
 
