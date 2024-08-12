@@ -1,9 +1,11 @@
 # BPMN Assistant
 
-BPMN Assistant is an application that uses Large Language Models (LLMs) to assist with creating, editing, and interpreting Business Process Model and Notation (BPMN) diagrams.
+BPMN Assistant is an application that uses Large Language Models (LLMs) to assist with creating, editing, and
+interpreting Business Process Model and Notation (BPMN) diagrams.
 
 ## Quickstart
-1. Clone the repository  
+
+1. Clone the repository
 
 ```
 git clone https://github.com/jtlicardo/bpmn-assistant.git
@@ -53,9 +55,21 @@ docker-compose up --build
 
 ## Prerequisites
 
-- [Docker](https://docs.docker.com/get-docker/)  
-- [Docker Compose](https://docs.docker.com/compose/install/)  
-- [Anthropic API key](https://console.anthropic.com/) or [OpenAI API key](https://platform.openai.com/docs/quickstart) (preferably both)  
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+- [Anthropic API key](https://console.anthropic.com/) or [OpenAI API key](https://platform.openai.com/docs/quickstart)
+
+## Supported models
+
+### OpenAI
+
+* GPT-4o mini
+* GPT-4o
+
+### Anthropic
+
+* Claude 3 Haiku
+* Claude 3.5 Sonnet
 
 ## Screenshots
 
@@ -73,33 +87,24 @@ docker-compose up --build
 
 The application currently supports a subset of BPMN elements:
 
-### Tasks
-
-* Regular task
+* Task
 * User task
 * Service task
-
-### Gateways
-
 * Exclusive gateway
 * Parallel gateway
-
-### Events
-
 * Start event
 * End event
 
 ## Limitations
 
 * The application currently only supports a subset of BPMN elements.
-* The quality of the output depends on the underlying AI models and may not always be perfect.
-* The AI assistant does not "see" manual edits made to the diagram. It always responds based on its last generated version. Keep this in mind when interacting with the assistant after making manual changes.
+* The AI assistant does not "see" manual edits made to the diagram. It always responds based on its last generated
+  version. Keep this in mind when interacting with the assistant after making manual changes.
 
 ## Future improvements
 
 * Expanded BPMN element support
 * Implementing LLM awareness of manual edits to the diagram
-* Drag and drop functionality for existing BPMN files
 
 ## Contact
 
