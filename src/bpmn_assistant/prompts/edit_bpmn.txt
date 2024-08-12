@@ -2,33 +2,24 @@
 
 ## Tasks
 
-### Tasks (no specific type)
+Specify the task type in the 'type' field. Only "task", "userTask" and "serviceTask" options are supported.
 
 ```json
 {
-    "type": String = "task",
+    "type": String = "task" | "userTask" | "serviceTask"
     "id": String,
-    "label": String // short task description
+    "label": String, // short task description
 }
 ```
 
-### User tasks
+## Events
+
+Specify the event type in the 'type' field. Only "startEvent" and "endEvent" options are supported.
 
 ```json
 {
-    "type": String = "userTask",
+    "type": String = "startEvent" | "endEvent",
     "id": String,
-    "label": String // short task description
-}
-```
-
-### Service tasks
-
-```json
-{
-    "type": String = "serviceTask",
-    "id": String,
-    "label": String // short task description
 }
 ```
 
@@ -36,26 +27,33 @@
 
 ### Exclusive gateway
 
+Each branch has a condition and a path of elements that are executed if the condition is met.
+If the branch does not lead to the next element in the process (for example, it goes back to a previous element), specify the next element id.
+If the branch leads to the next element in the process, do not specify the next element id.
+
 ```json
 {
     "type": String = "exclusiveGateway",
     "id": String,
     "label": String, // label for the gateway (e.g. "Professor agrees?")
+    "has_join": Boolean, // whether the gateway contains a join element that merges the branches
     "branches": [
         {
             "condition": String, // condition for the branch
-            "path": [] // array of elements that are executed if the condition is met
+            "path": [], // array of elements that are executed if the condition is met (can be empty)
+            "next": String | null, // OPTIONAL: ID of the next element if not following default sequence. Omit or set to null if following default sequence.
         },
         {
-            "condition": String, // condition for the branch
-            "path": [] // array of elements that are executed if the condition is met
+            "condition": String,
+            "path": [],
+            "next": String | null, // OPTIONAL: as above
         },
-        ...
-    ]
+        // ... more branches
+    ],
 }
 ```
 
-### Parallel gateway (fork)
+### Parallel gateway
 
 ```json
 {
@@ -64,55 +62,292 @@
     "branches": [
         [], // array of elements that are executed in parallel with the next array
         [], // array of elements that are executed in parallel with the previous array
-        ...
+        // ... more arrays
+    ],
+}
+```
+
+# Process examples
+
+The order of execution in the BPMN process is determined by the sequence of elements in the top-level "process" array. Elements are executed in the order they appear in this array, from first to last.
+
+Textual description:
+"The student sends an email to the professor. The professor receives the email. If the professor agrees with the proposal, he replies to the student."
+
+```json
+{
+    "process": [
+        {
+            "type": "startEvent",
+            "id": "start",
+        },
+        {
+            "type": "userTask",
+            "id": "task1",
+            "label": "Send email to professor",
+        },
+        {
+            "type": "task",
+            "id": "task2",
+            "label": "Receive the email",
+        },
+        {
+            "type": "exclusiveGateway",
+            "id": "exclusive1",
+            "label": "Professor agrees?",
+            "has_join": true,
+            "branches": [
+                {
+                    "condition": "If the professor agrees",
+                    "path": [
+                        {
+                            "type": "task",
+                            "id": "task3",
+                            "label": "Reply to the student",
+                        }
+                    ]
+                },
+                {
+                    "condition": "If the professor does not agree",
+                    "path": []
+                }
+            ]
+        },
+        {
+            "type": "endEvent",
+            "id": "end1",
+        }
     ]
-}
-```
-
-### Parallel gateway (join)
-
-```json
-{
-    "type": String = "parallelGateway",
-    "id": String
-}
-
-## Events
-
-### Start event
-
-```json
-{
-    "type": String = "startEvent",
-    "id": String
-}
-```
-
-### End event
-
-```json
-{
-    "type": String = "endEvent",
-    "id": String
 }
 ```
 
 ---
 
-Your task is to edit the JSON with a set of predefined functions.
+Textual description:
+"The manager sends the mail to the supplier and prepares the documents. At the same time, the customer searches for the goods and picks up the goods."
 
-The functions for editing the process are the following:
-- `delete_element(element_id)` - element_id is the unique identifier of an existing element in the process
-- `redirect_flow(element_id, next_id)` - element_id is the unique identifier of an existing element in the process, next_id is the unique identifier of the next element to which the flow should be redirected
-- `add_element(element, before_id=None, after_id=None)` - element is an object representing a new element to be added to the process, before_id and after_id are the unique identifiers of the elements before and after which the new element should be added, only one of them should be provided
-- `move_element(element_id, before_id=None, after_id=None)` - element_id is the unique identifier of an existing element in the process, before_id and after_id are the unique identifiers of the elements before and after which the element should be moved, only one of them should be provided
-- `update_element(new_element)` - new_element is an object representing the updated element - the new_element's id should match the id of the element to be updated
+```json
+{
+    "process": [
+        {
+            "type": "startEvent",
+            "id": "start",
+        },
+        {
+            "type": "parallelGateway",
+            "id": "parallel1",
+            "branches": [
+                [
+                    {
+                        "type": "serviceTask",
+                        "id": "task1",
+                        "label": "Send mail to supplier",
+                    },
+                    {
+                        "type": "task",
+                        "id": "task2",
+                        "label": "Prepare the documents",
+                    }
+                ],
+                [
+                    {
+                        "type": "task",
+                        "id": "task3",
+                        "label": "Search for the goods",
+                    },
+                    {
+                        "type": "task",
+                        "id": "task4",
+                        "label": "Pick up the goods",
+                    }
+                ]
+            ]
+        },
+        {
+            "type": "endEvent",
+            "id": "end1",
+        }
+    ]
+}
+```
 
-Provide one function at a time to update the process, along with the arguments for the function call.
+---
+
+Textual description: "Someone starts a process by entering an exam room. After that, they take the test. Once the exam is finished, their score is checked. If they scored more than 50%, their grade is recorded and the process ends. But if they fail, they have to go back to the beginning and take the exam again."
+
+```json
+{
+    "process": [
+      {
+        "type": "startEvent",
+        "id": "start"
+      },
+      {
+        "type": "task",
+        "id": "task1",
+        "label": "Enter exam room"
+      },
+      {
+        "type": "task",
+        "id": "task2",
+        "label": "Take test"
+      },
+      {
+        "type": "exclusiveGateway",
+        "id": "eg",
+        "label": "Score more than 50%?",
+        "has_join": false,
+        "branches": [
+          {
+            "condition": "Yes",
+            "path": [
+              {
+                "type": "task",
+                "id": "task3",
+                "label": "Enter grade"
+              },
+              {
+                "type": "endEvent",
+                "id": "end1"
+              }
+            ]
+          },
+          {
+            "condition": "No",
+            "path": [],
+            "next": "task1"
+          }
+        ]
+      }
+    ]
+}
+```
+
+---
+
+Textual description: "The process starts with a decision. If Option A is selected, Task A is performed. If Option B is selected, Task B is performed. Task A is followed by another decision. If Sub-option 1 is selected, Task A1 is performed. If Sub-option 2 is selected, Task A2 is performed."
+
+
+```json
+{
+  "process": [
+    {
+      "type": "startEvent",
+      "id": "start",
+    },
+    {
+      "type": "exclusiveGateway",
+      "id": "gateway1",
+      "label": "Main Decision",
+      "has_join": false,
+      "branches": [
+        {
+          "condition": "Option A",
+          "path": [
+            {
+              "type": "task",
+              "id": "taskA",
+              "label": "Perform Task A",
+            },
+            {
+              "type": "exclusiveGateway",
+              "id": "gateway2",
+              "label": "Nested Decision",
+              "has_join": false,
+              "branches": [
+                {
+                  "condition": "Sub-option 1",
+                  "path": [
+                    {
+                      "type": "task",
+                      "id": "taskA1",
+                      "label": "Perform Task A1",
+                    }
+                  ],
+                },
+                {
+                  "condition": "Sub-option 2",
+                  "path": [
+                    {
+                      "type": "task",
+                      "id": "taskA2",
+                      "label": "Perform Task A2",
+                    }
+                  ],
+                }
+              ]
+            }
+          ],
+        },
+        {
+          "condition": "Option B",
+          "path": [
+            {
+              "type": "task",
+              "id": "taskB",
+              "label": "Perform Task B",
+            }
+          ],
+        }
+      ]
+    },
+    {
+      "type": "endEvent",
+      "id": "end",
+    }
+  ]
+}
+```
+
+---
+
+# Process editing functions
+
+- `delete_element(element_id)`
+- `redirect_branch(branch_condition, next_id)`
+- `add_element(element, before_id=None, after_id=None)`
+- `move_element(element_id, before_id=None, after_id=None)`
+- `update_element(new_element)`
+
+1. `delete_element` - Deletes an element from the process.
+
+**Parameters:**
+- `element_id`: The id of an existing element in the process
+
+2. `redirect_branch` - Redirects the flow of a branch in an exclusive gateway.
+
+**Parameters:**
+- `branch_condition`: The condition of the branch to be redirected (needs to match the condition in the process)
+- `next_id`: The id of the next element to which the flow should be redirected
+
+3. `add_element` - Adds a new element to the process.
+
+**Parameters:**
+- `element`: An object representing a new element to be added to the process
+- `before_id`: (Optional) The id of the element before which the new element should be added
+- `after_id`: (Optional) The id of the element after which the new element should be added
+
+**Note:** Only one of `before_id` or `after_id` should be provided.
+
+4. `move_element` - Moves an existing element to a new position in the process.
+
+**Parameters:**
+- `element_id`: The id of an existing element in the process
+- `before_id`: (Optional) The id of the element before which the element should be moved
+- `after_id`: (Optional) The id of the element after which the element should be moved
+
+**Note:** Only one of `before_id` or `after_id` should be provided.
+
+5. `update_element` - Updates an existing element in the process.
+
+**Parameters:**
+- `new_element`: An object representing the updated element
+
+**Note:** The `new_element`'s id should match the id of the element to be updated.
+
+---
 
 # Example function calls
-
-Note: although the process contains 'next' keys in the elements, you should not output them in your response. They will be added automatically.
 
 ```json
 {
@@ -152,9 +387,9 @@ Note: although the process contains 'next' keys in the elements, you should not 
 
 ```json
 {
-  "function": "redirect_flow",
+  "function": "redirect_branch",
   "arguments": {
-    "element_id": "task2",
+    "branch_condition": "Product is out of stock",
     "next_id": "task3"
   }
 }
@@ -162,12 +397,16 @@ Note: although the process contains 'next' keys in the elements, you should not 
 
 ---
 
-The JSON representation of the process:
+# Your task
+
+The JSON representation of the process
 
 ```json
 ::process
 ```
 
-The requested change to the process: "::change_request"
+The requested change to the process: ::change_request
+
+Provide one function at a time to update the process, along with the arguments for the function call.
 
 Start with the first function call.

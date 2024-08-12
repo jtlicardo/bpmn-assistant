@@ -5,7 +5,7 @@ from bpmn_assistant.core import LLMFacade
 from bpmn_assistant.core.exceptions import ProcessException
 from bpmn_assistant.services.process_editing import (
     delete_element,
-    redirect_flow,
+    redirect_branch,
     add_element,
     move_element,
     update_element,
@@ -66,7 +66,7 @@ class BpmnEditorService:
 
             try:
                 updated_process = self._update_process(process, edit_proposal)
-                return updated_process  # Update was successful
+                return updated_process
             except ProcessException as e:
                 error_message = str(e)
                 logger.warning(
@@ -94,7 +94,7 @@ class BpmnEditorService:
         """
         edit_functions = {
             "delete_element": delete_element,
-            "redirect_flow": redirect_flow,
+            "redirect_branch": redirect_branch,
             "add_element": add_element,
             "move_element": move_element,
             "update_element": update_element,
@@ -104,7 +104,7 @@ class BpmnEditorService:
         args = edit_proposal["arguments"]
 
         res = edit_functions[function_to_call](process, **args)
-        return res["process"]  # Return the updated process
+        return res["process"]
 
     def _get_initial_edit_proposal(self, max_retries: int = 3) -> dict:
         prompt_template = resources.read_text("bpmn_assistant.prompts", "edit_bpmn.txt")
@@ -125,7 +125,7 @@ class BpmnEditorService:
 
             try:
                 self._validate_llm_response(response)
-                return response  # Return the response if it's valid
+                return response
             except ValueError as e:
                 error_message = str(e)
                 logger.warning(
@@ -134,7 +134,6 @@ class BpmnEditorService:
 
                 new_prompt = f"Editing error: {error_message}. Please provide a new edit proposal."
 
-                # We need the call the LLM again
                 response = self.llm_facade.call(new_prompt)
                 logger.info(f"New initial edit proposal: {response}")
 
@@ -170,7 +169,7 @@ class BpmnEditorService:
 
             try:
                 self._validate_llm_response(response, is_first_edit=False)
-                return response  # Return the response if it's valid
+                return response
             except ValueError as e:
                 error_message = str(e)
                 logger.warning(
@@ -179,7 +178,6 @@ class BpmnEditorService:
 
                 new_prompt = f"Editing error: {error_message}. Please provide a new edit proposal."
 
-                # We need the call the LLM again
                 response = self.llm_facade.call(new_prompt)
                 logger.info(f"New intermediate edit proposal: {response}")
 
@@ -192,7 +190,6 @@ class BpmnEditorService:
         if not is_first_edit and "stop" in response:
             return True
 
-        # The dict should have 'function' and 'arguments' keys
         if "function" not in response or "arguments" not in response:
             msg = "Function call should contain 'function' and 'arguments' keys."
             logger.error(msg)
@@ -206,14 +203,14 @@ class BpmnEditorService:
                 self._log_raise("Arguments should contain 'element_id' key.")
             elif len(args) > 1:
                 self._log_raise("Arguments should contain only 'element_id' key.")
-        elif function_to_call == "redirect_flow":
-            if "element_id" not in args or "next_id" not in args:
+        elif function_to_call == "redirect_branch":
+            if "branch_condition" not in args or "next_id" not in args:
                 self._log_raise(
-                    "Arguments should contain 'element_id' and 'next_id' keys."
+                    "Arguments should contain 'branch_condition' and 'next_id' keys."
                 )
             elif len(args) > 2:
                 self._log_raise(
-                    "Arguments should contain only 'element_id' and 'next_id' keys."
+                    "Arguments should contain only 'branch_condition' and 'next_id' keys."
                 )
         elif function_to_call == "add_element":
             if "element" not in args:

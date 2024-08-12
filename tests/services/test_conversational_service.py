@@ -26,7 +26,7 @@ class TestConversationalService:
         assert True
 
     @pytest.mark.skip(reason="Test with real API")
-    def test_make_final_comment(self, linear_process_fixture):
+    def test_make_final_comment(self, linear_process):
         service = ConversationalService(AnthropicModels.HAIKU.value)
 
         message_history = [
@@ -41,9 +41,7 @@ class TestConversationalService:
             ),
         ]
 
-        response_generator = service.make_final_comment(
-            message_history, linear_process_fixture
-        )
+        response_generator = service.make_final_comment(message_history, linear_process)
 
         print("RESPONSE:")
         for chunk in response_generator:

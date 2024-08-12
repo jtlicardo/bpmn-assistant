@@ -1,7 +1,15 @@
 import xml.etree.ElementTree as ET
 
+from bpmn_assistant.services import BpmnProcessTransformer
+
 
 class BpmnXmlGenerator:
+    """
+    Class to generate BPMN XML from the BPMN process data in JSON format.
+    """
+
+    def __init__(self):
+        self.transformer = BpmnProcessTransformer()
 
     def create_bpmn_xml(self, process: list[dict]) -> str:
         """
@@ -12,7 +20,7 @@ class BpmnXmlGenerator:
             The BPMN XML string.
         """
 
-        restructured_process = self._restructure(process)
+        transformed_process = self.transformer.transform(process)
 
         # Create the root element (definitions)
         root = ET.Element("definitions")
@@ -28,7 +36,7 @@ class BpmnXmlGenerator:
         process.set("isExecutable", "false")
 
         # Add elements
-        for element in restructured_process["elements"]:
+        for element in transformed_process["elements"]:
             elem = ET.SubElement(process, element["type"])
             elem.set("id", element["id"])
 
@@ -43,7 +51,7 @@ class BpmnXmlGenerator:
                 ET.SubElement(elem, "outgoing").text = outgoing
 
         # Add flows
-        for flow in restructured_process["flows"]:
+        for flow in transformed_process["flows"]:
             seq_flow = ET.SubElement(process, "sequenceFlow")
             seq_flow.set("id", flow["id"])
             seq_flow.set("sourceRef", flow["sourceRef"])
@@ -56,103 +64,3 @@ class BpmnXmlGenerator:
         xml_string = ET.tostring(root, encoding="unicode")
 
         return xml_string
-
-    def _restructure(self, process: list[dict]) -> dict:
-        """
-        Restructure the original BPMN JSON structure into a new structure more suitable for BPMN XML generation.
-
-        Example output structure::
-
-            {
-                "elements": [
-                    {
-                        "id": "element_id",
-                        "type": "element_type",
-                        "label": "element_label",
-                        "incoming": ["incoming_flow_id"],
-                        "outgoing": ["outgoing_flow_id"]
-                    }
-                ],
-                "flows": [
-                    {
-                        "id": "flow_id",
-                        "sourceRef": "source_element_id",
-                        "targetRef": "target_element_id",
-                        "condition": "flow_condition"
-                    }
-                ]
-            }
-        """
-
-        elements = []
-        flows = []
-
-        def handle_exclusive_gateway(element: dict):
-            for branch in element["branches"]:
-                branch_structure = self._restructure(branch["path"])
-                elements.extend(branch_structure["elements"])
-                flows.extend(branch_structure["flows"])
-
-                # Add the flow from the exclusive gateway to the first element in the branch
-                first_element = branch_structure["elements"][0]
-                flows.append(
-                    {
-                        "id": f"{element['id']}-{first_element['id']}",
-                        "sourceRef": element["id"],
-                        "targetRef": first_element["id"],
-                        "condition": branch["condition"],
-                    }
-                )
-
-        def handle_parallel_gateway(element: dict):
-            for branch in element["branches"]:
-                branch_structure = self._restructure(branch)
-                elements.extend(branch_structure["elements"])
-                flows.extend(branch_structure["flows"])
-
-                # Add the flow from the parallel gateway to the first element in the branch
-                first_element = branch_structure["elements"][0]
-                flows.append(
-                    {
-                        "id": f"{element['id']}-{first_element['id']}",
-                        "sourceRef": element["id"],
-                        "targetRef": first_element["id"],
-                        "condition": None,
-                    }
-                )
-
-        for element in process:
-            # For now we won't bother with the incoming and outgoing flows
-            elements.append(
-                {
-                    "id": element["id"],
-                    "type": element["type"],
-                    "label": element.get("label", None),
-                }
-            )
-
-            if element["type"] == "exclusiveGateway":
-                handle_exclusive_gateway(element)
-            elif element["type"] == "parallelGateway" and "branches" in element:
-                # Fork parallel gateway (joins don't need to be handled)
-                handle_parallel_gateway(element)
-            elif "next" in element and element["next"]:
-                flows.append(
-                    {
-                        "id": f"{element['id']}-{element['next']}",
-                        "sourceRef": element["id"],
-                        "targetRef": element["next"],
-                        "condition": None,
-                    }
-                )
-
-        # Loop through the elements and flows to find the incoming and outgoing flows
-        for element in elements:
-            element["incoming"] = [
-                flow["id"] for flow in flows if flow["targetRef"] == element["id"]
-            ]
-            element["outgoing"] = [
-                flow["id"] for flow in flows if flow["sourceRef"] == element["id"]
-            ]
-
-        return {"elements": elements, "flows": flows}

@@ -1,21 +1,39 @@
+# Current process
+
+::process
+
+---
+
+# Message history
+
 ::message_history
 
 ---
 
-The last user message indicates that the user wants to make a modification to the BPMN process.
+The last user message indicates that the user wants to make a modification to the process.
 
-Based on the message history, and the last user message, construct a 'change request' in the form of a short string.
+Based on the last user message, construct a detailed 'change request' in the form of a short string. Your change request should describe the modification needed, taking into account the available process editing capabilities.
+
+Available process editing functions:
+1. `delete_element(element_id)`
+2. `redirect_branch(branch_condition, next_id)`
+3. `add_element(element, before_id=None, after_id=None)`
+4. `move_element(element_id, before_id=None, after_id=None)`
+5. `update_element(new_element)`
 
 Example change requests:
-- "Change task1 from a task to a user task"
-- "Remove the gateway after task2"
-- "Add a sequence flow from task1 to task3, and from task3 to task4"
-- "Add a task between task2 and task3 where the customer provides feedback"
+- "Update the label of task2 to 'Approve request'."
+- "Remove the gateway with the ID 'gateway1'."
+- "Add a task after task2. The new task should be a service task with the label 'Send email'."
+- "Move task3 to be before task1."
+- "Redirect the 'Yes' branch of gateway1 to flow to task4."
 
-Your response will be in the form of a JSON object with a single key, "change_request", and a string value.
+Your response should be a JSON object with a single key, "change_request", containing a string that describes the needed change in natural language.
 
 ```json
 {
     "change_request": "your change request here"
 }
 ```
+
+Remember, you're describing the change needed, not specifying how to implement it programmatically.

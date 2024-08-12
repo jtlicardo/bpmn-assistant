@@ -1,9 +1,9 @@
 import traceback
 from importlib import resources
-from typing import Optional
 
 from bpmn_assistant.config import logger
 from bpmn_assistant.core import LLMFacade, MessageItem
+from bpmn_assistant.core.enums import BPMNElementType
 from bpmn_assistant.services.process_editing import (
     BpmnEditorService,
     define_change_request,
@@ -12,6 +12,9 @@ from bpmn_assistant.utils import prepare_prompt, message_history_to_string
 
 
 class BpmnModelingService:
+    """
+    Service for creating and editing BPMN processes.
+    """
 
     def create_bpmn(
         self,
@@ -40,11 +43,10 @@ class BpmnModelingService:
 
         while attempts < max_retries:
             attempts += 1
-            response = None
+            response = llm_facade.call(prompt)
 
             try:
-                response = llm_facade.call(prompt)
-                self._validate_bpmn(response["process"], None)
+                self._validate_bpmn(response["process"])
                 return response["process"]  # Return the process if it's valid
             except Exception as e:
                 error_type = (
@@ -70,15 +72,18 @@ class BpmnModelingService:
         )
 
     def edit_bpmn(
-        self, llm_facade: LLMFacade, process: list, message_history: list[MessageItem]
+        self,
+        llm_facade: LLMFacade,
+        process: list[dict],
+        message_history: list[MessageItem],
     ) -> list:
-        change_request = define_change_request(llm_facade, message_history)
+        change_request = define_change_request(llm_facade, process, message_history)
 
         bpmn_editor_service = BpmnEditorService(llm_facade, process, change_request)
 
         return bpmn_editor_service.edit_bpmn()
 
-    def _validate_bpmn(self, process: list, parent_gateway: Optional[dict]) -> None:
+    def _validate_bpmn(self, process: list) -> None:
         """
         Validate the BPMN process.
         Args:
@@ -88,18 +93,18 @@ class BpmnModelingService:
         """
         try:
             for element in process:
-                self._validate_element(element, parent_gateway)
+                self._validate_element(element)
 
                 if element["type"] == "exclusiveGateway":
                     for branch in element["branches"]:
-                        self._validate_bpmn(branch["path"], element)
-                if element["type"] == "parallelGateway" and "branches" in element:
+                        self._validate_bpmn(branch["path"])
+                if element["type"] == "parallelGateway":
                     for branch in element["branches"]:
-                        self._validate_bpmn(branch, element)
+                        self._validate_bpmn(branch)
         except Exception as e:
             raise e
 
-    def _validate_element(self, element: dict, parent_gateway: Optional[dict]) -> None:
+    def _validate_element(self, element: dict) -> None:
         """
         Validate the BPMN element.
         Args:
@@ -112,36 +117,16 @@ class BpmnModelingService:
         elif "type" not in element:
             raise Exception(f"Element is missing a type: {element}")
 
-        # TODO: this needs to be formalized
-        supported_elements = [
-            "task",
-            "userTask",
-            "serviceTask",
-            "exclusiveGateway",
-            "parallelGateway",
-            "startEvent",
-            "endEvent",
-        ]
+        supported_elements = [e.value for e in BPMNElementType]
 
         if element["type"] not in supported_elements:
             raise Exception(
                 f"Unsupported element type: {element['type']}. Supported types: {supported_elements}"
             )
 
-        if (
-            parent_gateway is not None
-            and "next" in element
-            and element["next"] == parent_gateway["id"]
-        ):
-            raise Exception(
-                f"Element {element['id']} cannot point back to its parent gateway {parent_gateway['id']}"
-            )
-
         if element["type"] in ["task", "userTask", "serviceTask"]:
             if "label" not in element:
                 raise Exception(f"Task element is missing a label: {element}")
-            if "next" not in element:
-                raise Exception(f"Task element is missing a 'next' field: {element}")
 
         elif element["type"] == "exclusiveGateway":
             if "label" not in element:
@@ -155,20 +140,7 @@ class BpmnModelingService:
                     raise Exception(f"Invalid branch in exclusive gateway: {branch}")
 
         elif element["type"] == "parallelGateway":
-            if "branches" in element:  # Fork parallel gateway
-                if not isinstance(element["branches"], list):
-                    raise Exception(
-                        f"Parallel gateway (fork) has invalid 'branches': {element}"
-                    )
-            elif "next" not in element:  # Join parallel gateway
+            if "branches" not in element or not isinstance(element["branches"], list):
                 raise Exception(
-                    f"Parallel gateway (join) is missing a 'next' field: {element}"
+                    f"Parallel gateway is missing or has invalid 'branches': {element}"
                 )
-
-        elif element["type"] == "startEvent":
-            if "next" not in element:
-                raise Exception(f"Start event is missing a 'next' field: {element}")
-
-        elif element["type"] == "endEvent":
-            if element.get("next") is not None:
-                raise Exception(f"End event should have 'next' set to null: {element}")

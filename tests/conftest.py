@@ -23,23 +23,55 @@ def openai_facade():
 
 
 @pytest.fixture
-def order_process_fixture():
+def empty_gateway_path_process():
+    """
+    Description: A process that contains an exclusive gateway with an empty path.
+    """
+    return [
+        {"type": "startEvent", "id": "start"},
+        {"type": "task", "id": "task1", "label": "Perform a simple task"},
+        {"type": "task", "id": "task2", "label": "Perform a second task"},
+        {
+            "type": "exclusiveGateway",
+            "id": "exclusive1",
+            "label": "Decision Point",
+            "has_join": False,
+            "branches": [
+                {
+                    "condition": "Condition A",
+                    "path": [
+                        {
+                            "type": "task",
+                            "id": "task3",
+                            "label": "Perform a third task",
+                        }
+                    ],
+                },
+                {"condition": "Condition B", "path": [], "next": "end"},
+            ],
+        },
+        {"type": "endEvent", "id": "end"},
+    ]
+
+
+@pytest.fixture
+def order_process():
     """
     Description: An ordering process that contains 2 exclusive gateways, one
     of which is nested inside the other.
     """
     return [
-        {"type": "startEvent", "id": "start1", "next": "task1"},
+        {"type": "startEvent", "id": "start1"},
         {
             "type": "task",
             "id": "task1",
             "label": "Receive order from customer",
-            "next": "exclusive1",
         },
         {
             "type": "exclusiveGateway",
             "id": "exclusive1",
             "label": "Product in stock?",
+            "has_join": False,
             "branches": [
                 {
                     "condition": "Product is out of stock",
@@ -48,7 +80,6 @@ def order_process_fixture():
                             "type": "task",
                             "id": "task2",
                             "label": "Notify customer that order cannot be fulfilled",
-                            "next": "end1",
                         },
                     ],
                 },
@@ -59,6 +90,7 @@ def order_process_fixture():
                             "type": "exclusiveGateway",
                             "id": "exclusive2",
                             "label": "Payment succeeds?",
+                            "has_join": False,
                             "branches": [
                                 {
                                     "condition": "Payment succeeds",
@@ -67,13 +99,11 @@ def order_process_fixture():
                                             "type": "task",
                                             "id": "task3",
                                             "label": "Process order",
-                                            "next": "task4",
                                         },
                                         {
                                             "type": "task",
                                             "id": "task4",
                                             "label": "Notify customer that order has been processed",
-                                            "next": "end1",
                                         },
                                     ],
                                 },
@@ -84,7 +114,6 @@ def order_process_fixture():
                                             "type": "task",
                                             "id": "task5",
                                             "label": "Notify customer that order cannot be processed",
-                                            "next": "end1",
                                         }
                                     ],
                                 },
@@ -94,17 +123,17 @@ def order_process_fixture():
                 },
             ],
         },
-        {"type": "endEvent", "id": "end1", "next": None},
+        {"type": "endEvent", "id": "end1"},
     ]
 
 
 @pytest.fixture
-def procurement_process_fixture():
+def procurement_process():
     """
     Description: A procurement process that involves two parallel branches.
     """
     return [
-        {"type": "startEvent", "id": "start1", "next": "parallel1"},
+        {"type": "startEvent", "id": "start1"},
         {
             "type": "parallelGateway",
             "id": "parallel1",
@@ -114,13 +143,11 @@ def procurement_process_fixture():
                         "type": "task",
                         "id": "task1",
                         "label": "Send mail to supplier",
-                        "next": "task2",
                     },
                     {
                         "type": "task",
                         "id": "task2",
                         "label": "Prepare the documents",
-                        "next": "join1",
                     },
                 ],
                 [
@@ -128,55 +155,103 @@ def procurement_process_fixture():
                         "type": "task",
                         "id": "task3",
                         "label": "Search for the goods",
-                        "next": "task4",
                     },
                     {
                         "type": "task",
                         "id": "task4",
                         "label": "Pick up the goods",
-                        "next": "join1",
                     },
                 ],
             ],
         },
-        {"type": "parallelGateway", "id": "join1", "next": "end1"},
-        {"type": "endEvent", "id": "end1", "next": None},
+        {"type": "endEvent", "id": "end1"},
     ]
 
 
 @pytest.fixture
-def linear_process_fixture():
+def linear_process():
     """
     Description: A linear process that involves a sequence of tasks.
     """
     return [
-        {"type": "startEvent", "id": "start1", "next": "task1"},
+        {"type": "startEvent", "id": "start1"},
         {
             "type": "task",
             "id": "task1",
             "label": "Receive customer inquiry",
-            "next": "task2",
         },
         {
             "type": "userTask",
             "id": "task2",
             "label": "Review product catalog",
-            "next": "task3",
         },
-        {"type": "task", "id": "task3", "label": "Prepare quote", "next": "task4"},
+        {"type": "task", "id": "task3", "label": "Prepare quote"},
         {
             "type": "serviceTask",
             "id": "task4",
             "label": "Send quote to customer",
-            "next": "task5",
         },
         {
             "type": "task",
             "id": "task5",
             "label": "Follow up with customer",
-            "next": "end1",
         },
-        {"type": "endEvent", "id": "end1", "next": None},
+        {"type": "endEvent", "id": "end1"},
+    ]
+
+
+@pytest.fixture
+def pg_inside_eg_process():
+    """
+    Description: A process that includes an exclusive gateway, with one of the
+    branches containing a parallel gateway.
+    """
+    return [
+        {"type": "startEvent", "id": "start1"},
+        {
+            "type": "exclusiveGateway",
+            "id": "exclusive1",
+            "label": "Exclusive Decision",
+            "has_join": True,
+            "branches": [
+                {
+                    "condition": "Condition A",
+                    "path": [
+                        {
+                            "type": "task",
+                            "id": "task2",
+                            "label": "Task A",
+                        },
+                    ],
+                },
+                {
+                    "condition": "Condition B",
+                    "path": [
+                        {
+                            "type": "parallelGateway",
+                            "id": "parallel1",
+                            "branches": [
+                                [
+                                    {
+                                        "type": "task",
+                                        "id": "task3",
+                                        "label": "Parallel Task 1",
+                                    },
+                                ],
+                                [
+                                    {
+                                        "type": "task",
+                                        "id": "task4",
+                                        "label": "Parallel Task 2",
+                                    },
+                                ],
+                            ],
+                        }
+                    ],
+                },
+            ],
+        },
+        {"type": "endEvent", "id": "end1"},
     ]
 
 
@@ -186,6 +261,64 @@ def dict_to_message_item(message_dict):
 
 def convert_message_history(message_history):
     return [dict_to_message_item(message) for message in message_history]
+
+
+@pytest.fixture
+def define_change_request_messages_1():
+    messages = [
+        {
+            "role": "user",
+            "content": "Can you help me create a BPMN process for a university exam?",
+        },
+        {
+            "role": "assistant",
+            "content": "Sure! What are the steps involved in the process?",
+        },
+        {
+            "role": "user",
+            "content": "The process involves logging in to the university's website, taking an online exam, "
+            "grading the exam, and entering the grade.",
+        },
+        {
+            "role": "assistant",
+            "content": "I created the process! You can see it in the right panel.",
+        },
+        {
+            "role": "user",
+            "content": "Can you combine the tasks for logging in to the university website and taking an online exam?",
+        },
+    ]
+
+    return convert_message_history(messages)
+
+
+@pytest.fixture
+def define_change_request_messages_2():
+    messages = [
+        {
+            "role": "user",
+            "content": "Can you help me create a BPMN process for a university exam?",
+        },
+        {
+            "role": "assistant",
+            "content": "Sure! What are the steps involved in the process?",
+        },
+        {
+            "role": "user",
+            "content": "The process involves logging in to the university's website, taking an online exam, "
+            "grading the exam, and entering the grade.",
+        },
+        {
+            "role": "assistant",
+            "content": "I created the process! You can see it in the right panel.",
+        },
+        {
+            "role": "user",
+            "content": "After entering the grade, the professor should be notified.",
+        },
+    ]
+
+    return convert_message_history(messages)
 
 
 @pytest.fixture
@@ -292,6 +425,14 @@ def bpmn_xml_exclusive_gateway():
 
 
 @pytest.fixture
+def bpmn_xml_exclusive_gateway_join():
+    """
+    Description: A BPMN XML string that represents a process with an exclusive gateway that has a join gateway.
+    """
+    return load_bpmn("exclusive_gateway_join.bpmn")
+
+
+@pytest.fixture
 def bpmn_xml_nested_exclusive_gateway():
     """
     Description: A BPMN XML string that represents a process with a nested exclusive gateway.
@@ -305,3 +446,81 @@ def bpmn_xml_parallel_gateway():
     Description: A BPMN XML string that represents a process with a parallel gateway.
     """
     return load_bpmn("parallel_gateway.bpmn")
+
+
+@pytest.fixture
+def bpmn_xml_pg_inside_eg():
+    """
+    Description: A BPMN XML string that represents a process with an exclusive gateway that contains a parallel gateway.
+    """
+    return load_bpmn("pg_inside_eg.bpmn")
+
+
+@pytest.fixture
+def bpmn_xml_eg_inside_pg():
+    """
+    Description: A BPMN XML string that represents a process with a parallel gateway that contains an exclusive gateway.
+    """
+    return load_bpmn("eg_inside_pg.bpmn")
+
+
+@pytest.fixture
+def bpmn_xml_eg_next():
+    """
+    Description: A BPMN XML string that represents a process with an exclusive gateway that contains a loop (empty
+    path).
+    """
+    return load_bpmn("eg_next.bpmn")
+
+
+@pytest.fixture
+def bpmn_xml_eg_next_2():
+    """
+    Description: A BPMN XML string that represents a process with an exclusive gateway that contains a loop
+    (non-empty path).
+    """
+    return load_bpmn("eg_next_2.bpmn")
+
+
+@pytest.fixture
+def bpmn_xml_eg_next_3():
+    """
+    Description: A BPMN XML string that represents a process with an exclusive gateway that contains a loop with a
+    parallel gateway.
+    """
+    return load_bpmn("eg_next_3.bpmn")
+
+
+@pytest.fixture
+def bpmn_xml_eg_next_4():
+    """
+    Description: A BPMN XML string that represents a process with an exclusive gateway that contains a loop with
+    another exclusive gateway.
+    """
+    return load_bpmn("eg_next_4.bpmn")
+
+
+@pytest.fixture
+def bpmn_xml_eg_next_5():
+    """
+    Description: A BPMN XML string that represents a process with an exclusive gateway that contains a loop with
+    another exclusive gateway (join).
+    """
+    return load_bpmn("eg_next_5.bpmn")
+
+
+@pytest.fixture
+def bpmn_xml_eg_next_6():
+    """
+    Description: A BPMN XML string that represents a process with an exclusive gateway that contains a loop with
+    another exclusive gateway (split paths).
+    """
+    return load_bpmn("eg_next_6.bpmn")
+
+
+@pytest.fixture
+def bpmn_xml_eg_empty_path():
+    """
+    Description: A BPMN XML string that represents a process with an exclusive gateway that contains an empty path.
+    """
+    return load_bpmn("eg_empty_path.bpmn")

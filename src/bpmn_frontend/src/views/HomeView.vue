@@ -22,7 +22,6 @@
 import BpmnModeler from "bpmn-js/lib/Modeler";
 import ChatInterface from "../components/ChatInterface.vue";
 // import initialDiagram from "../assets/initialDiagram.js";
-
 import "bpmn-js/dist/assets/diagram-js.css";
 import "bpmn-js/dist/assets/bpmn-js.css";
 import "bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css";
@@ -62,9 +61,6 @@ export default {
   },
   methods: {
     async handleDrop(event) {
-      console.warn("Not yet implemented!");
-      return;
-
       event.preventDefault(); // Prevent the browser from default file handling
       if (event.dataTransfer.items) {
         for (let i = 0; i < event.dataTransfer.items.length; i++) {
@@ -80,7 +76,7 @@ export default {
                   this.bpmnViewer.get("canvas").zoom("fit-viewport");
                   console.log("BPMN diagram loaded successfully");
                   this.bpmnXml = xmlContent;
-                  await this.createBpmnJson(xmlContent);
+                  await this.createBpmnJson();
                 } catch (err) {
                   console.error("Failed to import BPMN diagram:", err);
                 }
@@ -91,23 +87,20 @@ export default {
         }
       }
     },
-    async createBpmnJson(bpmnXmlValue) {
+    async createBpmnJson() {
       try {
-        const response = await fetch("http://127.0.0.1:8000/bpmn_to_json", {
+        const response = await fetch("http://localhost:8000/bpmn_to_json", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ bpmn_xml: bpmnXmlValue }),
+          body: JSON.stringify({ bpmn_xml: this.bpmnXml }),
         });
 
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
 
-        const data = await response.json();
-        const { json_output: bpmnJsonOutput } = data;
-
-        this.process = bpmnJsonOutput;
-        console.log("BPMN JSON created successfully:", bpmnJsonOutput);
+        this.process = await response.json();
+        console.log("BPMN JSON created successfully:", this.process);
       } catch (error) {
         console.error("Error creating BPMN JSON:", error);
       }
