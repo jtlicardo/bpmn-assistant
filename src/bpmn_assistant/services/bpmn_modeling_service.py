@@ -43,7 +43,7 @@ class BpmnModelingService:
 
         while attempts < max_retries:
             attempts += 1
-            response = None
+            response = llm_facade.call(prompt)
 
             try:
                 self._validate_bpmn(response["process"])
