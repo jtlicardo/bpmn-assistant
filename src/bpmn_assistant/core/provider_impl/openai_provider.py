@@ -6,19 +6,19 @@ from openai.types.chat import ChatCompletionChunk
 from openai.types.chat.completion_create_params import ResponseFormat
 
 from bpmn_assistant.config import logger
-from bpmn_assistant.core.enums import OpenAIModels, OutputMode
+from bpmn_assistant.core.enums import OpenAIModels, OutputMode, MessageRole
 from bpmn_assistant.core.llm_provider import LLMProvider
 
 
 class OpenAIProvider(LLMProvider):
     def __init__(self, api_key: str, output_mode: OutputMode = OutputMode.JSON):
-        self.api_key = api_key
         self.output_mode = output_mode
-        self.client = OpenAI(api_key=self.api_key)
+        self.client = OpenAI(api_key=api_key)
 
     def call(
         self,
         model: str,
+        prompt: str,
         messages: list[dict[str, str]],
         max_tokens: int,
         temperature: float,
@@ -26,6 +26,8 @@ class OpenAIProvider(LLMProvider):
         """
         Implementation of the OpenAI API call.
         """
+        messages.append({"role": "user", "content": prompt})
+
         response_format: ResponseFormat = (
             {"type": "json_object"}
             if self.output_mode == OutputMode.JSON
@@ -50,6 +52,7 @@ class OpenAIProvider(LLMProvider):
     def stream(
         self,
         model: str,
+        prompt: str,
         messages: list[dict[str, str]],
         max_tokens: int,
         temperature: float,
@@ -57,6 +60,8 @@ class OpenAIProvider(LLMProvider):
         """
         Implementation of the OpenAI API stream.
         """
+        messages.append({"role": "user", "content": prompt})
+
         response = self.client.chat.completions.create(
             model=model,
             messages=messages,  # type: ignore[arg-type]
@@ -83,6 +88,12 @@ class OpenAIProvider(LLMProvider):
             if self.output_mode == OutputMode.JSON
             else []
         )
+
+    def add_message(
+        self, messages: list[dict[str, str]], role: MessageRole, content: str
+    ) -> None:
+        message_role = "assistant" if role == MessageRole.ASSISTANT else "user"
+        messages.append({"role": message_role, "content": content})
 
     def check_model_compatibility(self, model: str) -> bool:
         return model in [m.value for m in OpenAIModels]

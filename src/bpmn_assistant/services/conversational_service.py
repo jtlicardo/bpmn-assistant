@@ -5,7 +5,6 @@ from bpmn_assistant.core import MessageItem
 from bpmn_assistant.core.enums import OutputMode
 from bpmn_assistant.utils import (
     prepare_prompt,
-    get_provider_based_on_model,
     get_llm_facade,
     message_history_to_string,
 )
@@ -14,7 +13,6 @@ from bpmn_assistant.utils import (
 class ConversationalService:
 
     def __init__(self, model: str):
-        self.provider = get_provider_based_on_model(model)
         self.llm_facade = get_llm_facade(model, output_mode=OutputMode.TEXT)
 
     def respond_to_query(
