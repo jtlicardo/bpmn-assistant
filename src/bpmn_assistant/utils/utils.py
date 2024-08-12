@@ -8,6 +8,7 @@ from bpmn_assistant.core.enums import (
     OpenAIModels,
     AnthropicModels,
     OutputMode,
+    GoogleModels,
 )
 
 
@@ -64,6 +65,9 @@ def get_llm_facade(model: str, output_mode: OutputMode = OutputMode.JSON) -> LLM
     elif is_anthropic_model(model):
         api_key = os.getenv("ANTHROPIC_API_KEY")
         provider = Provider.ANTHROPIC
+    elif is_google_model(model):
+        api_key = os.getenv("GOOGLE_API_KEY")
+        provider = Provider.GOOGLE
     else:
         raise Exception("Invalid model")
 
@@ -75,26 +79,20 @@ def get_llm_facade(model: str, output_mode: OutputMode = OutputMode.JSON) -> LLM
     )
 
 
-def get_provider_based_on_model(model: str) -> Provider:
-    if is_openai_model(model):
-        return Provider.OPENAI
-    elif is_anthropic_model(model):
-        return Provider.ANTHROPIC
-    else:
-        raise ValueError("Invalid model")
-
-
 def get_available_providers() -> dict:
     load_dotenv(override=True)
     openai_api_key = os.getenv("OPENAI_API_KEY")
     anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+    google_api_key = os.getenv("GOOGLE_API_KEY")
 
     openai_present = openai_api_key is not None and len(openai_api_key) > 0
     anthropic_present = anthropic_api_key is not None and len(anthropic_api_key) > 0
+    google_present = google_api_key is not None and len(google_api_key) > 0
 
     return {
         "openai": openai_present,
         "anthropic": anthropic_present,
+        "google": google_present,
     }
 
 
@@ -104,6 +102,10 @@ def is_openai_model(model: str) -> bool:
 
 def is_anthropic_model(model: str) -> bool:
     return model in [model.value for model in AnthropicModels]
+
+
+def is_google_model(model: str) -> bool:
+    return model in [model.value for model in GoogleModels]
 
 
 def message_history_to_string(message_history: list[MessageItem]) -> str:

@@ -57,7 +57,12 @@ docker-compose up --build
 
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
-- [OpenAI API key](https://platform.openai.com/docs/quickstart) or [Anthropic API key](https://console.anthropic.com/)
+- At least one of the following API keys:
+    - [OpenAI API key](https://platform.openai.com/docs/quickstart)
+    - [Anthropic API key](https://console.anthropic.com/)
+    - [Google AI Studio (Gemini) API key](https://aistudio.google.com/app/apikey)
+
+Note: You can use any combination of the API keys above, but at least one is required to use the app.
 
 ## Supported models
 
@@ -70,6 +75,11 @@ docker-compose up --build
 
 * Claude 3 Haiku
 * Claude 3.5 Sonnet
+
+### Google
+
+* Gemini 1.5 Flash
+* Gemini 1.5 Pro
 
 ## Screenshots
 
