@@ -82,6 +82,8 @@ docker-compose up --build
 1. Diagram creation - Generates BPMN diagrams based on text descriptions.
 2. Diagram editing - Modifies BPMN diagrams based on user input.
 3. Diagram interpretation - Provides text descriptions of BPMN diagrams.
+4. Drag-and-drop functionality - Users can drag and drop BPMN processes (containing only supported elements) into the
+   editor, then ask the LLM to edit or explain them.
 
 ## Supported elements
 
@@ -100,6 +102,7 @@ The application currently supports a subset of BPMN elements:
 * The application currently only supports a subset of BPMN elements.
 * The AI assistant does not "see" manual edits made to the diagram. It always responds based on its last generated
   version. Keep this in mind when interacting with the assistant after making manual changes.
+* Pools and lanes are not supported.
 
 ## Future improvements
 
