@@ -6,8 +6,8 @@ from openai.types.chat import ChatCompletionChunk
 from openai.types.chat.completion_create_params import ResponseFormat
 
 from bpmn_assistant.config import logger
-from .enums import OpenAIModels, OutputMode
-from .llm_provider import LLMProvider
+from bpmn_assistant.core.enums import OpenAIModels, OutputMode
+from bpmn_assistant.core.llm_provider import LLMProvider
 
 
 class OpenAIProvider(LLMProvider):

@@ -5,8 +5,8 @@ from anthropic import Anthropic
 from anthropic.types import TextBlock
 
 from bpmn_assistant.config import logger
-from .enums import AnthropicModels, OutputMode
-from .llm_provider import LLMProvider
+from bpmn_assistant.core.enums import AnthropicModels, OutputMode
+from bpmn_assistant.core.llm_provider import LLMProvider
 
 
 class AnthropicProvider(LLMProvider):

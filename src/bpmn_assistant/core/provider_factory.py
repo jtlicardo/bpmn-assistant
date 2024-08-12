@@ -1,7 +1,6 @@
-from .anthropic_provider import AnthropicProvider
+from bpmn_assistant.core.provider_impl import AnthropicProvider, OpenAIProvider
 from .enums import Provider, OutputMode
 from .llm_provider import LLMProvider
-from .openai_provider import OpenAIProvider
 
 
 class ProviderFactory:
