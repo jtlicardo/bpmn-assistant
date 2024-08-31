@@ -2,12 +2,12 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-COPY /src/bpmn_assistant /app/src/bpmn_assistant
-
 COPY pyproject.toml /app/
 COPY requirements.txt /app/
 
 RUN pip install --no-cache-dir -r requirements.txt
+
+COPY /src/bpmn_assistant /app/src/bpmn_assistant
 
 # Install bpmn_assistant package
 RUN pip install --no-cache-dir -e .
