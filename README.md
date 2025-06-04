@@ -99,6 +99,7 @@ Note: You can use any combination of the API keys above, but at least one is req
 3. Diagram interpretation - Provides text descriptions of BPMN diagrams.
 4. Drag-and-drop functionality - Users can drag and drop BPMN files (containing only supported elements) into the
    editor, then ask the LLM to edit or explain the process.
+5. Image attachments - Paste, drag, or upload an image to include it with a chat message.
 
 ## Supported elements
 

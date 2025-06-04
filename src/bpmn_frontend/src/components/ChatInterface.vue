@@ -59,6 +59,7 @@
           :key="index"
           :role="message.role"
           :content="message.content"
+          :image-url="message.image_url"
         />
 
         <LoadingIndicator v-if="isLoading" />
@@ -96,6 +97,9 @@
           :counter="10000"
           rows="4"
           @keydown.enter.prevent="handleKeyDown"
+          @paste="handlePaste"
+          @dragover.prevent
+          @drop.prevent="handleDrop"
           hide-details
           class="input-textarea"
           density="comfortable"
@@ -103,9 +107,24 @@
           bg-color="white"
         >
         </v-textarea>
+        <input
+          type="file"
+          accept="image/*"
+          ref="imageInput"
+          @change="handleImageChange"
+          style="display: none"
+        />
+        <img v-if="selectedImage" :src="selectedImage" class="preview-image" />
+        <v-btn
+          icon="mdi-image"
+          variant="text"
+          size="small"
+          :disabled="isLoading"
+          @click="triggerImageSelect"
+        ></v-btn>
         <v-btn
           @click="handleMessageSubmit"
-          :disabled="isLoading || !currentInput.trim()"
+          :disabled="isLoading || (!currentInput.trim() && !selectedImage)"
           color="primary"
           class="send-button"
           icon="mdi-send"
@@ -149,6 +168,7 @@ export default {
       messages: [],
       currentInput: '',
       selectedModel: '',
+      selectedImage: null,
       hasError: false,
     };
   },
@@ -184,8 +204,48 @@ export default {
         this.handleMessageSubmit();
       }
     },
+    triggerImageSelect() {
+      this.$refs.imageInput.click();
+    },
+    handlePaste(event) {
+      const items = event.clipboardData?.items || [];
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              this.selectedImage = e.target.result;
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      }
+    },
+    handleDrop(event) {
+      const file = event.dataTransfer.files[0];
+      if (!file || !file.type.startsWith('image/')) {
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.selectedImage = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    },
+    handleImageChange(event) {
+      const file = event.target.files[0];
+      if (!file) {
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.selectedImage = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    },
     async handleMessageSubmit() {
-      if (!this.currentInput.trim()) {
+      if (!this.currentInput.trim() && !this.selectedImage) {
         return;
       }
 
@@ -202,8 +262,9 @@ export default {
       // Clear any previous errors
       this.hasError = false;
 
-      this.messages.push({ content: this.currentInput, role: 'user' });
+      this.messages.push({ content: this.currentInput, role: 'user', image_url: this.selectedImage });
       this.currentInput = '';
+      this.selectedImage = null;
 
       this.$nextTick(() => {
         this.scrollToBottom();
@@ -416,6 +477,13 @@ export default {
 
 .input-textarea {
   flex-grow: 1;
+}
+
+.preview-image {
+  max-width: 80px;
+  max-height: 80px;
+  margin-right: 8px;
+  border-radius: 4px;
 }
 
 .app-title {

@@ -9,7 +9,7 @@ class LLMProvider(ABC):
     def call(
         self,
         model: str,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         max_tokens: int,
         temperature: float,
         structured_output: BaseModel | None = None,
@@ -20,14 +20,14 @@ class LLMProvider(ABC):
     def stream(
         self,
         model: str,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         max_tokens: int,
         temperature: float,
     ) -> Generator[str, None, None]:
         pass
 
     @abstractmethod
-    def get_initial_messages(self) -> list[dict[str, str]]:
+    def get_initial_messages(self) -> list[dict[str, Any]]:
         pass
 
     @abstractmethod

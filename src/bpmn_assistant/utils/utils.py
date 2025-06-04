@@ -106,6 +106,11 @@ def message_history_to_string(message_history: list[MessageItem]) -> str:
     """
     Convert a message history list into a formatted string.
     """
-    return "\n".join(
-        f"{message.role.capitalize()}: {message.content}" for message in message_history
-    )
+    formatted_messages = []
+    for message in message_history:
+        text = message.content
+        if message.image_url:
+            text = (text + " [Image attached]") if text else "[Image attached]"
+        formatted_messages.append(f"{message.role.capitalize()}: {text}")
+
+    return "\n".join(formatted_messages)

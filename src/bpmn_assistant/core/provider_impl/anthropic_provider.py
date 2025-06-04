@@ -15,10 +15,25 @@ class AnthropicProvider(LLMProvider):
         self.output_mode = output_mode
         self.client = Anthropic(api_key=api_key)
 
+    def _format_messages(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        formatted: list[dict[str, Any]] = []
+        for message in messages:
+            if message.get("image_url"):
+                parts = []
+                parts.append(
+                    {"type": "image", "source": {"type": "url", "url": message["image_url"]}}
+                )
+                if message.get("content"):
+                    parts.append({"type": "text", "text": message["content"]})
+                formatted.append({"role": message["role"], "content": parts})
+            else:
+                formatted.append({"role": message["role"], "content": message.get("content", "")})
+        return formatted
+
     def call(
         self,
         model: str,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         max_tokens: int,
         temperature: float,
         structured_output: BaseModel | None = None,
@@ -35,7 +50,7 @@ class AnthropicProvider(LLMProvider):
                 max_tokens=max_tokens,
                 temperature=temperature,
                 system="You are a helpful assistant designed to output JSON.",
-                messages=messages,  # type: ignore[arg-type]
+                messages=self._format_messages(messages),  # type: ignore[arg-type]
             )
 
             content = response.content[0]
@@ -57,7 +72,7 @@ class AnthropicProvider(LLMProvider):
                 model=model,
                 max_tokens=max_tokens,
                 temperature=temperature,
-                messages=messages,  # type: ignore[arg-type]
+                messages=self._format_messages(messages),  # type: ignore[arg-type]
             )
 
             content = response.content[0]
@@ -72,7 +87,7 @@ class AnthropicProvider(LLMProvider):
     def stream(
         self,
         model: str,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         max_tokens: int,
         temperature: float,
     ) -> Generator[str, None, None]:
@@ -83,14 +98,14 @@ class AnthropicProvider(LLMProvider):
             model=model,
             max_tokens=max_tokens,
             temperature=temperature,
-            messages=messages,  # type: ignore[arg-type]
+            messages=self._format_messages(messages),  # type: ignore[arg-type]
         )
 
         with response as stream:
             for text in stream.text_stream:
                 yield text
 
-    def get_initial_messages(self) -> list[dict[str, str]]:
+    def get_initial_messages(self) -> list[dict[str, Any]]:
         return []
 
     def check_model_compatibility(self, model: str) -> bool:

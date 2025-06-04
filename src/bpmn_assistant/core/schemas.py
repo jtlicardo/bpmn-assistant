@@ -13,6 +13,7 @@ class MessageItem(BaseModel):
 
     role: str
     content: str
+    image_url: Optional[str] = None
 
 
 class BPMNTask(BaseModel):

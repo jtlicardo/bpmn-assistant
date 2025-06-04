@@ -1,13 +1,13 @@
 import json
 import os
 import re
+import mimetypes
 from typing import Any, Generator
 
 from litellm import completion
 from pydantic import BaseModel
 
 from bpmn_assistant.config import logger
-from bpmn_assistant.core.enums.message_roles import MessageRole
 from bpmn_assistant.core.enums.models import (
     FireworksAIModels,
     GoogleModels,
@@ -24,17 +24,39 @@ class LiteLLMProvider(LLMProvider):
         os.environ["OPENAI_API_KEY"] = api_key
         os.environ["GEMINI_API_KEY"] = api_key
 
+    def _format_messages(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        formatted: list[dict[str, Any]] = []
+        for message in messages:
+            if message.get("image_url"):
+                mime, _ = mimetypes.guess_type(message["image_url"])
+                parts = []
+                if message.get("content"):
+                    parts.append({"type": "text", "text": message["content"]})
+                parts.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": message["image_url"],
+                            **({"format": mime} if mime else {}),
+                        },
+                    }
+                )
+                formatted.append({"role": message["role"], "content": parts})
+            else:
+                formatted.append({"role": message["role"], "content": message.get("content", "")})
+        return formatted
+
     def call(
         self,
         model: str,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         max_tokens: int,
         temperature: float,
         structured_output: BaseModel | None = None,
     ) -> str | dict[str, Any]:
         params: dict[str, Any] = {
             "model": model,
-            "messages": messages,
+            "messages": self._format_messages(messages),
         }
 
         if structured_output is not None or self.output_mode == OutputMode.JSON:
@@ -72,13 +94,13 @@ class LiteLLMProvider(LLMProvider):
     def stream(
         self,
         model: str,
-        messages: list[dict[str, str]],
+        messages: list[dict[str, Any]],
         max_tokens: int,
         temperature: float,
     ) -> Generator[str, None, None]:
         response = completion(
             model=model,
-            messages=messages,
+            messages=self._format_messages(messages),
             max_tokens=max_tokens,
             temperature=temperature,
             stream=True,
@@ -129,7 +151,7 @@ class LiteLLMProvider(LLMProvider):
             if thought:
                 logger.info(f"Model thinking phase: {thought}")
 
-    def get_initial_messages(self) -> list[dict[str, str]]:
+    def get_initial_messages(self) -> list[dict[str, Any]]:
         return (
             [
                 {

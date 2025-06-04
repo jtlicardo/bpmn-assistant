@@ -6,6 +6,7 @@
           <b>{{ roleDisplay }}</b>
         </div>
         <div class="message-content" v-html="formattedContent"></div>
+        <img v-if="imageUrl" :src="imageUrl" class="message-image" />
       </div>
     </div>
   </transition>
@@ -16,6 +17,7 @@ export default {
   props: {
     role: String,
     content: String,
+    imageUrl: String,
   },
   computed: {
     roleDisplay() {
@@ -105,6 +107,12 @@ export default {
 .message-content {
   font-size: 1em;
   line-height: 1.4;
+}
+
+.message-image {
+  margin-top: 8px;
+  max-width: 100%;
+  border-radius: 4px;
 }
 
 .message-content ::v-deep(strong) {
