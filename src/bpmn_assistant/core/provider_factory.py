@@ -10,11 +10,11 @@ from .llm_provider import LLMProvider
 class ProviderFactory:
     @staticmethod
     def get_provider(
-        provider: Provider, api_key: str, output_mode: OutputMode = OutputMode.JSON
+        provider: Provider, api_key: str, output_mode: OutputMode = OutputMode.JSON, base_url: str | None = None
     ) -> LLMProvider:
 
         if provider in [Provider.OPENAI, Provider.FIREWORKS_AI, Provider.GOOGLE]:
-            return LiteLLMProvider(api_key, output_mode)
+            return LiteLLMProvider(api_key, output_mode, base_url)
         elif provider == Provider.ANTHROPIC:
             return AnthropicProvider(api_key, output_mode)
         else:

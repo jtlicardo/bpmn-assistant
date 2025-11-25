@@ -17,8 +17,9 @@ from bpmn_assistant.core.llm_provider import LLMProvider
 
 
 class LiteLLMProvider(LLMProvider):
-    def __init__(self, api_key: str, output_mode: OutputMode = OutputMode.JSON):
+    def __init__(self, api_key: str, output_mode: OutputMode = OutputMode.JSON, base_url: str | None = None):
         self.output_mode = output_mode
+        self.base_url = base_url
         os.environ["FIREWORKS_AI_API_KEY"] = api_key
         os.environ["OPENAI_API_KEY"] = api_key
         os.environ["GEMINI_API_KEY"] = api_key
@@ -54,8 +55,19 @@ class LiteLLMProvider(LLMProvider):
     ) -> str | dict[str, Any]:
         self._validate_vision_support(model, messages)
 
+        # Use custom model name if base_url is set and OPENAI_MODEL_NAME env var is provided
+        # Prefix with "openai/" so litellm knows to use OpenAI provider format
+        actual_model = model
+        if self.base_url and self._is_openai_model(model):
+            custom_model_name = os.getenv("OPENAI_MODEL_NAME")
+            if custom_model_name:
+                actual_model = custom_model_name
+            # Prefix with "openai/" for custom base_url to tell litellm which provider format to use
+            if not actual_model.startswith("openai/"):
+                actual_model = f"openai/{actual_model}"
+
         params: dict[str, Any] = {
-            "model": model,
+            "model": actual_model,
             "messages": messages,
         }
 
@@ -69,6 +81,10 @@ class LiteLLMProvider(LLMProvider):
             params["temperature"] = 1
         else:
             params["temperature"] = temperature
+
+        # Use custom base_url if provided (for self-hosted models)
+        if self.base_url and self._is_openai_model(model):
+            params["api_base"] = self.base_url
 
         response = completion(**params)
 
@@ -107,17 +123,34 @@ class LiteLLMProvider(LLMProvider):
     ) -> Generator[str, None, None]:
         self._validate_vision_support(model, messages)
 
+        # Use custom model name if base_url is set and OPENAI_MODEL_NAME env var is provided
+        # Prefix with "openai/" so litellm knows to use OpenAI provider format
+        actual_model = model
+        if self.base_url and self._is_openai_model(model):
+            custom_model_name = os.getenv("OPENAI_MODEL_NAME")
+            if custom_model_name:
+                actual_model = custom_model_name
+            # Prefix with "openai/" for custom base_url to tell litellm which provider format to use
+            if not actual_model.startswith("openai/"):
+                actual_model = f"openai/{actual_model}"
+
         # GPT-5 models only support temperature=1
         if model in [OpenAIModels.GPT_5_1.value, OpenAIModels.GPT_5_MINI.value]:
             temperature = 1
 
-        response = completion(
-            model=model,
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            stream=True,
-        )
+        stream_params = {
+            "model": actual_model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "stream": True,
+        }
+
+        # Use custom base_url if provided (for self-hosted models)
+        if self.base_url and self._is_openai_model(model):
+            stream_params["api_base"] = self.base_url
+
+        response = completion(**stream_params)
 
         open_tag, close_tag = "<think>", "</think>"
         inside_think = False
