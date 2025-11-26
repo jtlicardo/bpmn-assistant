@@ -61,6 +61,14 @@ copy .env.example .env
 
 3. Open the `.env` file and replace the placeholder values with your actual API keys.
 
+   **Optional: Custom OpenAI-compatible API endpoint**
+   
+   If you're using a self-hosted or custom OpenAI-compatible API endpoint, you can configure it by adding:
+   ```
+   OPENAI_BASE_URL=https://your-custom-api-endpoint.com
+   OPENAI_MODEL_NAME=your-model-name
+   ```
+
 4. Build and run the application
 
 ```

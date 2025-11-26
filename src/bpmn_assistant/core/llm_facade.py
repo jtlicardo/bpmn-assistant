@@ -17,6 +17,7 @@ class LLMFacade:
         api_key: str,
         model: str,
         output_mode: OutputMode = OutputMode.JSON,
+        base_url: str | None = None,
     ):
         """
         Initialize the LLM facade with the given provider, API key, model, and output mode.
@@ -25,9 +26,10 @@ class LLMFacade:
             api_key: The API key for the provider
             model: The model to use
             output_mode: The output mode (JSON or text)
+            base_url: Optional custom base URL for API requests (e.g., for self-hosted models)
         """
         self.provider: LLMProvider = ProviderFactory.get_provider(
-            provider, api_key, output_mode
+            provider, api_key, output_mode, base_url
         )
         self.model = model
         self.output_mode = output_mode

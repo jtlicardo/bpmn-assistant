@@ -59,6 +59,7 @@ export default {
   data() {
     return {
       selectedModel: '',
+      customOpenAIModelName: null,
       models: [
         { value: Models.GPT_5_1, title: 'GPT-5.1', provider: Providers.OPENAI },
         {
@@ -119,6 +120,23 @@ export default {
         );
       }
 
+      // Replace OpenAI models with single custom model entry if custom name is set
+      if (this.customOpenAIModelName && this.availableProviders.includes(Providers.OPENAI)) {
+        const openaiModels = filteredModels.filter(
+          (model) => model.provider === Providers.OPENAI
+        );
+        const otherModels = filteredModels.filter(
+          (model) => model.provider !== Providers.OPENAI
+        );
+        if (openaiModels.length > 0) {
+          // Show only one OpenAI model entry with custom name (use first model's value for backend mapping)
+          filteredModels = [
+            { ...openaiModels[0], title: this.customOpenAIModelName },
+            ...otherModels,
+          ];
+        }
+      }
+
       return filteredModels;
     },
     showReasoningModelWarning() {
@@ -170,8 +188,13 @@ export default {
           const data = await response.json();
 
           this.availableProviders = Object.keys(data).filter(
-            (provider) => data[provider]
+            (provider) => data[provider] && provider !== 'openai_model_name'
           );
+
+          // Store custom OpenAI model name if provided
+          if (data.openai_model_name) {
+            this.customOpenAIModelName = data.openai_model_name;
+          }
         }
 
         // Notify parent if no providers available
@@ -179,7 +202,18 @@ export default {
         this.$parent.setHasAvailableProviders(hasProviders);
 
         if (this.availableProviders.includes(Providers.OPENAI)) {
-          this.onModelChange(Models.GPT_4_1);
+          // When custom model name is set, select the first OpenAI model (which will be shown with custom name)
+          // Otherwise default to GPT_4_1
+          let modelToSelect = Models.GPT_4_1;
+          if (this.customOpenAIModelName) {
+            const firstOpenAIModel = this.models.find(
+              (model) => model.provider === Providers.OPENAI
+            );
+            if (firstOpenAIModel) {
+              modelToSelect = firstOpenAIModel.value;
+            }
+          }
+          this.onModelChange(modelToSelect);
         } else if (this.availableProviders.includes(Providers.ANTHROPIC)) {
           this.onModelChange(Models.SONNET_4_5);
         } else if (this.availableProviders.includes(Providers.GOOGLE)) {

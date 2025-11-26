@@ -50,11 +50,17 @@ def get_llm_facade(model: str, output_mode: OutputMode = OutputMode.JSON, api_ke
     if not api_key:
         raise Exception(f"API key not found for provider {provider}")
 
+    # Read custom base_url from env for self-hosted models
+    base_url = None
+    if is_openai_model(model):
+        base_url = os.getenv("OPENAI_BASE_URL")
+
     return LLMFacade(
         provider,
         api_key,
         model,
         output_mode=output_mode,
+        base_url=base_url,
     )
 
 
@@ -85,12 +91,21 @@ def get_available_providers(api_keys: dict[str, str] | None = None) -> dict:
         google_present = bool(os.getenv("GEMINI_API_KEY"))
         fireworks_ai_present = bool(os.getenv("FIREWORKS_AI_API_KEY"))
 
-    return {
+    result = {
         "openai": openai_present,
         "anthropic": anthropic_present,
         "google": google_present,
         "fireworks_ai": fireworks_ai_present,
     }
+
+    # Include custom model name if OPENAI_BASE_URL and OPENAI_MODEL_NAME are set
+    if len(api_keys) == 0:  # Only in local Docker mode
+        openai_base_url = os.getenv("OPENAI_BASE_URL")
+        openai_model_name = os.getenv("OPENAI_MODEL_NAME")
+        if openai_base_url and openai_model_name:
+            result["openai_model_name"] = openai_model_name
+
+    return result
 
 
 def replace_reasoning_model(model: str) -> str:
