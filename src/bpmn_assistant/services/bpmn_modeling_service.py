@@ -69,7 +69,7 @@ class BpmnModelingService:
         message = "Max number of retries reached. Could not create the BPMN process."
         if last_error:
             message += f" Last error from provider: {last_error}"
-        raise Exception(message)
+        raise ValueError(message)
 
     def edit_bpmn(
         self,

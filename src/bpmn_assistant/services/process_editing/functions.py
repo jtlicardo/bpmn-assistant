@@ -143,12 +143,6 @@ def update_element(process: list[dict], new_element: dict) -> dict:
         raise ElementNotFoundException(
             f"Element with id {new_element['id']} does not exist"
         )
-    elif new_element["type"] in [
-        "exclusiveGateway",
-        "inclusiveGateway",
-        "parallelGateway",
-    ]:
-        raise GatewayUpdateError("Cannot update a gateway element")
 
     position = find_position(process, before_id=new_element["id"])
 

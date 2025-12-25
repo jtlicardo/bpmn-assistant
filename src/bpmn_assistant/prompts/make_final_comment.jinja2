@@ -12,11 +12,11 @@ You can work with the following BPMN elements: {{ supported_elements }}.
 
 The last user message indicates that the user wanted to create or modify a BPMN process.
 
-You have made the requested modification to the BPMN process, and this is the updated BPMN process in JSON format:
+You have made modifications to the BPMN process, and this is the updated BPMN process in JSON format:
 ```json
 {{ process }}
 ```
 
-Make a final comment to the user, explaining that the BPMN process has been successfully created or modified.
+Make a final comment to the user. Base everything you say on the JSON above, do not invent tasks or flows that are not present. Briefly describe what was modified. If any part of the user's request could not be satisfied because of BPMN/validation rules, explicitly mention that and what was done instead.
 
 DO NOT include the JSON data in your response.

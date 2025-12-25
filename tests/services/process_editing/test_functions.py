@@ -87,13 +87,3 @@ class TestProcessEditingFunctions:
         task4 = updated_segment[1]
         assert task4["label"] == new_label
         assert task4["type"] == new_type
-
-    def test_update_element_raises_exception_if_element_is_gateway(self, order_process):
-        new_element = {
-            "type": "exclusiveGateway",
-            "id": "exclusive1",
-            "label": "a",
-        }
-        with pytest.raises(Exception) as e:
-            update_element(order_process, new_element)
-        assert str(e.value) == "Cannot update a gateway element"

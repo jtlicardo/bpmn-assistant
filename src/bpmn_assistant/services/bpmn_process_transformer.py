@@ -197,6 +197,11 @@ class BpmnProcessTransformer:
 
             for branch in element["branches"]:
                 branch_structure = self.transform(branch, join_gateway_id)
+                if not branch_structure["elements"]:
+                    raise ValueError(
+                        f"Parallel gateway '{element['id']}' cannot have an empty branch. "
+                        "Do not delete the last element in a branch; update or remove the gateway instead."
+                    )
                 elements.extend(branch_structure["elements"])
                 flows.extend(branch_structure["flows"])
 

@@ -26,6 +26,10 @@ class AnthropicProvider(LLMProvider):
         """
         Implementation of the Anthropic API call.
         """
+        logger.debug(
+            f"Sending prompt (model={model}): {json.dumps(messages, indent=2)}"
+        )
+
         if self.output_mode == OutputMode.JSON:
             # We add "{" to constrain the model to output a JSON object
             messages.append({"role": "assistant", "content": "{"})

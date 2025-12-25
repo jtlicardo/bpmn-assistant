@@ -26,7 +26,7 @@ class TestCreateBpmn:
 
         mock_llm_facade.call.return_value = invalid_process
 
-        with pytest.raises(Exception) as e:
+        with pytest.raises(ValueError) as e:
             bpmn_service.create_bpmn(mock_llm_facade, [])
 
         assert "Max number of retries reached" in str(e.value)

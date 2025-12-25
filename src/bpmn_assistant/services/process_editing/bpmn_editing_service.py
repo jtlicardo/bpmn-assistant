@@ -9,7 +9,7 @@ from bpmn_assistant.services.process_editing import (
     redirect_branch,
     update_element,
 )
-from bpmn_assistant.services.validate_bpmn import validate_element
+from bpmn_assistant.services.validate_bpmn import validate_element, validate_bpmn
 
 
 class BpmnEditingService:
@@ -62,8 +62,9 @@ class BpmnEditingService:
                 # Update process based on the edit proposal
                 try:
                     updated_process = self._update_process(self.process, edit_proposal)
+                    validate_bpmn(updated_process)
                     return updated_process
-                except ProcessException as e:
+                except (ProcessException, ValueError) as e:
                     last_error = e
                     logger.warning(f"Validation error (attempt {attempts}): {str(e)}")
                     prompt = f"Error: {str(e)}. Try again. Change request: {self.change_request}"
@@ -75,7 +76,7 @@ class BpmnEditingService:
         message = "Max number of retries reached."
         if last_error:
             message += f" Last error from provider: {last_error}"
-        raise Exception(message)
+        raise ValueError(message)
 
     def _apply_intermediate_edits(
         self,
@@ -123,6 +124,7 @@ class BpmnEditingService:
                     updated_process = self._update_process(
                         updated_process, edit_proposal
                     )
+                    validate_bpmn(updated_process)
 
                     break
 
@@ -138,12 +140,12 @@ class BpmnEditingService:
                 )
                 if last_error:
                     error_message += f" Last error from provider: {last_error}"
-                raise Exception(error_message)
+                raise ValueError(error_message)
 
         message = "Max number of editing iterations reached."
         if last_iteration_error:
             message += f" Last error from provider: {last_iteration_error}"
-        raise Exception(message)
+        raise ValueError(message)
 
     def _update_process(self, process: list, edit_proposal: dict) -> list:
         """

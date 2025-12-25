@@ -60,7 +60,7 @@ class LLMFacade:
     def call(
         self,
         prompt: str,
-        max_tokens: int = 2000,
+        max_tokens: int = 5000,
         temperature: float = 0.3,
         structured_output: BaseModel | None = None,
         images: list[MessageImage] | None = None,
