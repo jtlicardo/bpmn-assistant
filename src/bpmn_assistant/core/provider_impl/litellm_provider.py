@@ -47,16 +47,7 @@ class LiteLLMProvider(LLMProvider):
                 f"Model '{model}' does not support image inputs."
             )
 
-    def call(
-        self,
-        model: str,
-        messages: list[dict[str, str]],
-        max_tokens: int,
-        temperature: float,
-        structured_output: BaseModel | None = None,
-    ) -> str | dict[str, Any]:
-        self._validate_vision_support(model, messages)
-
+    def _resolve_model_name(self, model: str) -> str:
         # Use custom model name if base_url is set and OPENAI_MODEL_NAME env var is provided
         # Prefix with "openai/" so litellm knows to use OpenAI provider format
         actual_model = model
@@ -67,6 +58,19 @@ class LiteLLMProvider(LLMProvider):
             # Prefix with "openai/" for custom base_url to tell litellm which provider format to use
             if not actual_model.startswith("openai/"):
                 actual_model = f"openai/{actual_model}"
+        return actual_model
+
+    def call(
+        self,
+        model: str,
+        messages: list[dict[str, str]],
+        max_tokens: int,
+        temperature: float,
+        structured_output: BaseModel | None = None,
+    ) -> str | dict[str, Any]:
+        self._validate_vision_support(model, messages)
+
+        actual_model = self._resolve_model_name(model)
 
         params: dict[str, Any] = {
             "model": actual_model,
@@ -129,16 +133,7 @@ class LiteLLMProvider(LLMProvider):
     ) -> Generator[str, None, None]:
         self._validate_vision_support(model, messages)
 
-        # Use custom model name if base_url is set and OPENAI_MODEL_NAME env var is provided
-        # Prefix with "openai/" so litellm knows to use OpenAI provider format
-        actual_model = model
-        if self.base_url and self._is_openai_model(model):
-            custom_model_name = os.getenv("OPENAI_MODEL_NAME")
-            if custom_model_name:
-                actual_model = custom_model_name
-            # Prefix with "openai/" for custom base_url to tell litellm which provider format to use
-            if not actual_model.startswith("openai/"):
-                actual_model = f"openai/{actual_model}"
+        actual_model = self._resolve_model_name(model)
 
         # GPT-5 models only support temperature=1
         if model in [OpenAIModels.GPT_5_1.value, OpenAIModels.GPT_5_MINI.value]:
