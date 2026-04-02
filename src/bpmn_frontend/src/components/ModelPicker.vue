@@ -24,7 +24,7 @@ const Models = Object.freeze({
   GPT_4_1: 'gpt-4.1',
   SONNET_4_5: 'claude-sonnet-4-5-20250929',
   OPUS_4_6: 'claude-opus-4-6',
-  GEMINI_3_PRO: 'gemini/gemini-3-pro-preview',
+  GEMINI_3_1_PRO: 'gemini/gemini-3.1-pro-preview',
   GEMINI_3_FLASH: 'gemini/gemini-3-flash-preview',
   KIMI_K2P5: 'fireworks_ai/kimi-k2p5',
 });
@@ -70,8 +70,8 @@ export default {
           provider: Providers.GOOGLE,
         },
         {
-          value: Models.GEMINI_3_PRO,
-          title: 'Gemini 3 Pro',
+          value: Models.GEMINI_3_1_PRO,
+          title: 'Gemini 3.1 Pro',
           provider: Providers.GOOGLE,
         },
         {
@@ -154,7 +154,7 @@ export default {
         } else if (this.availableProviders.includes(Providers.ANTHROPIC)) {
           this.onModelChange(Models.OPUS_4_6);
         } else if (this.availableProviders.includes(Providers.GOOGLE)) {
-          this.onModelChange(Models.GEMINI_3_PRO);
+          this.onModelChange(Models.GEMINI_3_1_PRO);
         } else if (this.availableProviders.includes(Providers.FIREWORKS_AI)) {
           this.onModelChange(Models.KIMI_K2P5);
         }

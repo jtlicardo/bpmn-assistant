@@ -98,7 +98,7 @@ Additional prerequisites for local deployment:
 ### Google
 
 * Gemini 3 Flash Preview
-* Gemini 3 Pro Preview
+* Gemini 3.1 Pro Preview
 
 ### Fireworks AI
 
