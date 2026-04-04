@@ -48,6 +48,36 @@ class LiteLLMProvider(LLMProvider):
                 f"Model '{model}' does not support image inputs."
             )
 
+    def _process_response(self, raw_output: str) -> str | dict[str, Any]:
+        """
+        Process the raw output from the model. Returns the appropriate response based on the output mode.
+        If the output mode is JSON, the raw output is parsed and returned as a dict.
+        If the output mode is text, the raw output is returned as is.
+        """
+        if self.output_mode == OutputMode.JSON:
+            try:
+                result = json.loads(raw_output)
+            except json.decoder.JSONDecodeError as e:
+                logger.debug(
+                    f"Strict JSON parsing failed for model response. "
+                    f"Trying loose parser. Error: {e}"
+                )
+                try:
+                    result = parse_json_loose(raw_output)
+                except json.decoder.JSONDecodeError as loose_error:
+                    logger.error(f"JSONDecodeError: {loose_error}")
+                    logger.error(f"Raw output: {raw_output}")
+                    raise Exception("Invalid JSON response from LLM") from loose_error
+
+            if not isinstance(result, dict):
+                raise ValueError(f"Invalid JSON response from LLM: {result}")
+
+            return result
+        elif self.output_mode == OutputMode.TEXT:
+            return raw_output
+        else:
+            raise ValueError(f"Unsupported output mode: {self.output_mode}")
+
     def call(
         self,
         model: str,
@@ -137,33 +167,3 @@ class LiteLLMProvider(LLMProvider):
             or model in [m.value for m in GoogleModels]
             or model in [m.value for m in AnthropicModels]
         )
-
-    def _process_response(self, raw_output: str) -> str | dict[str, Any]:
-        """
-        Process the raw output from the model. Returns the appropriate response based on the output mode.
-        If the output mode is JSON, the raw output is parsed and returned as a dict.
-        If the output mode is text, the raw output is returned as is.
-        """
-        if self.output_mode == OutputMode.JSON:
-            try:
-                result = json.loads(raw_output)
-            except json.decoder.JSONDecodeError as e:
-                logger.debug(
-                    f"Strict JSON parsing failed for model response. "
-                    f"Trying loose parser. Error: {e}"
-                )
-                try:
-                    result = parse_json_loose(raw_output)
-                except json.decoder.JSONDecodeError as loose_error:
-                    logger.error(f"JSONDecodeError: {loose_error}")
-                    logger.error(f"Raw output: {raw_output}")
-                    raise Exception("Invalid JSON response from LLM") from loose_error
-
-            if not isinstance(result, dict):
-                raise ValueError(f"Invalid JSON response from LLM: {result}")
-
-            return result
-        elif self.output_mode == OutputMode.TEXT:
-            return raw_output
-        else:
-            raise ValueError(f"Unsupported output mode: {self.output_mode}")

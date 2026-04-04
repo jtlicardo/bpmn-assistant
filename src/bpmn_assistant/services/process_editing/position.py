@@ -6,9 +6,6 @@ class Position:
         self.index = index
         self.path = path or []
 
-    def __repr__(self):
-        return f"Position(index={self.index}, path={self.path})"
-
     @classmethod
     def from_dict(cls, position_dict: dict):
         return cls(position_dict["index"], position_dict.get("path"))
@@ -18,3 +15,6 @@ class Position:
 
     def is_top_level(self):
         return len(self.path) == 0
+
+    def __repr__(self):
+        return f"Position(index={self.index}, path={self.path})"

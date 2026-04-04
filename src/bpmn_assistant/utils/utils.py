@@ -15,6 +15,22 @@ from bpmn_assistant.core.enums import (
 )
 
 
+def is_openai_model(model: str) -> bool:
+    return model in [model.value for model in OpenAIModels]
+
+
+def is_anthropic_model(model: str) -> bool:
+    return model in [model.value for model in AnthropicModels]
+
+
+def is_google_model(model: str) -> bool:
+    return model in [model.value for model in GoogleModels]
+
+
+def is_fireworks_ai_model(model: str) -> bool:
+    return model in [model.value for model in FireworksAIModels]
+
+
 def get_llm_facade(model: str, output_mode: OutputMode = OutputMode.JSON, api_keys: dict[str, str] | None = None) -> LLMFacade:
     """
     Get the LLM facade based on the model type
@@ -91,22 +107,6 @@ def get_available_providers(api_keys: dict[str, str] | None = None) -> dict:
         "google": google_present,
         "fireworks_ai": fireworks_ai_present,
     }
-
-
-def is_openai_model(model: str) -> bool:
-    return model in [model.value for model in OpenAIModels]
-
-
-def is_anthropic_model(model: str) -> bool:
-    return model in [model.value for model in AnthropicModels]
-
-
-def is_google_model(model: str) -> bool:
-    return model in [model.value for model in GoogleModels]
-
-
-def is_fireworks_ai_model(model: str) -> bool:
-    return model in [model.value for model in FireworksAIModels]
 
 
 def message_history_to_string(message_history: list[MessageItem]) -> str:

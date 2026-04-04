@@ -19,16 +19,122 @@ class BpmnEditingService:
         self.change_request = change_request
         self.prompt_processor = PromptTemplateProcessor()
 
-    def edit_bpmn(self) -> list:
+    def _update_process(self, process: list, edit_proposal: dict) -> list:
         """
-        Edit a BPMN process based on a change request.
+        Update the process based on the edit proposal.
+        Args:
+            process: The BPMN process to be edited
+            edit_proposal: The edit proposal from the LLM (function and args)
         Returns:
-            The updated BPMN process
+            The updated process
+        Raises:
+            ProcessException: If the edit proposal is invalid
         """
-        updated_process = self._apply_initial_edit()
-        updated_process = self._apply_intermediate_edits(updated_process)
+        edit_functions = {
+            "delete_element": delete_element,
+            "redirect_branch": redirect_branch,
+            "add_element": add_element,
+            "move_element": move_element,
+            "update_element": update_element,
+        }
 
-        return updated_process
+        function_to_call = edit_proposal["function"]
+        args = edit_proposal["arguments"]
+
+        res = edit_functions[function_to_call](process, **args)
+        return res["process"]
+
+    def _validate_update_element(self, args):
+        if "new_element" not in args:
+            raise ValueError("Arguments should contain 'new_element' key.")
+        elif len(args) > 1:
+            raise ValueError("Arguments should contain only 'new_element' key.")
+        validate_element(args["new_element"])
+
+    def _validate_move_element(self, args):
+        if "element_id" not in args:
+            raise ValueError("Arguments should contain 'element_id' key.")
+        elif "before_id" in args and "after_id" in args:
+            raise ValueError(
+                "Only one of 'before_id' and 'after_id' should be provided."
+            )
+        elif "before_id" not in args and "after_id" not in args:
+            raise ValueError("Either 'before_id' or 'after_id' should be provided.")
+        elif len(args) > 2:
+            raise ValueError(
+                "Arguments should contain only 'element_id' and either 'before_id' or 'after_id' keys."
+            )
+
+    def _validate_add_element(self, args):
+        if "element" not in args:
+            raise ValueError("Arguments should contain 'element' key.")
+        elif "before_id" in args and "after_id" in args:
+            raise ValueError(
+                "Only one of 'before_id' and 'after_id' should be provided."
+            )
+        elif "before_id" not in args and "after_id" not in args:
+            raise ValueError("Either 'before_id' or 'after_id' should be provided.")
+        elif len(args) > 2:
+            raise ValueError(
+                "Arguments should contain only 'element' and either 'before_id' or 'after_id' keys."
+            )
+        validate_element(args["element"])
+
+    def _validate_redirect_branch(self, args):
+        if "branch_condition" not in args or "next_id" not in args:
+            raise ValueError(
+                "Arguments should contain 'branch_condition' and 'next_id' keys."
+            )
+        elif len(args) > 2:
+            raise ValueError(
+                "Arguments should contain only 'branch_condition' and 'next_id' keys."
+            )
+
+    def _validate_delete_element(self, args):
+        if "element_id" not in args:
+            raise ValueError("Arguments should contain 'element_id' key.")
+        elif len(args) > 1:
+            raise ValueError("Arguments should contain only 'element_id' key.")
+
+    def _validate_edit_proposal(
+        self, edit_proposal: dict, is_first_edit: bool = True
+    ) -> None:
+        """
+        Validate the edit proposal from the LLM.
+        Args:
+            edit_proposal: The edit proposal from the LLM
+            is_first_edit: Whether the response is for the initial edit
+        Raises:
+            ValueError: If the edit proposal is invalid
+        """
+
+        if not is_first_edit and "stop" in edit_proposal:
+            if len(edit_proposal) > 1:
+                raise ValueError(
+                    "If 'stop' key is present, no other key should be provided."
+                )
+            return
+
+        if "function" not in edit_proposal or "arguments" not in edit_proposal:
+            raise ValueError(
+                "Function call should contain 'function' and 'arguments' keys."
+            )
+
+        function_to_call = edit_proposal["function"]
+        args = edit_proposal["arguments"]
+
+        if function_to_call == "delete_element":
+            self._validate_delete_element(args)
+        elif function_to_call == "redirect_branch":
+            self._validate_redirect_branch(args)
+        elif function_to_call == "add_element":
+            self._validate_add_element(args)
+        elif function_to_call == "move_element":
+            self._validate_move_element(args)
+        elif function_to_call == "update_element":
+            self._validate_update_element(args)
+        else:
+            raise ValueError(f"Function '{function_to_call}' not found.")
 
     def _apply_initial_edit(self, max_retries: int = 4) -> list:
         """
@@ -147,119 +253,13 @@ class BpmnEditingService:
             message += f" Last error from provider: {last_iteration_error}"
         raise ValueError(message)
 
-    def _update_process(self, process: list, edit_proposal: dict) -> list:
+    def edit_bpmn(self) -> list:
         """
-        Update the process based on the edit proposal.
-        Args:
-            process: The BPMN process to be edited
-            edit_proposal: The edit proposal from the LLM (function and args)
+        Edit a BPMN process based on a change request.
         Returns:
-            The updated process
-        Raises:
-            ProcessException: If the edit proposal is invalid
+            The updated BPMN process
         """
-        edit_functions = {
-            "delete_element": delete_element,
-            "redirect_branch": redirect_branch,
-            "add_element": add_element,
-            "move_element": move_element,
-            "update_element": update_element,
-        }
+        updated_process = self._apply_initial_edit()
+        updated_process = self._apply_intermediate_edits(updated_process)
 
-        function_to_call = edit_proposal["function"]
-        args = edit_proposal["arguments"]
-
-        res = edit_functions[function_to_call](process, **args)
-        return res["process"]
-
-    def _validate_edit_proposal(
-        self, edit_proposal: dict, is_first_edit: bool = True
-    ) -> None:
-        """
-        Validate the edit proposal from the LLM.
-        Args:
-            edit_proposal: The edit proposal from the LLM
-            is_first_edit: Whether the response is for the initial edit
-        Raises:
-            ValueError: If the edit proposal is invalid
-        """
-
-        if not is_first_edit and "stop" in edit_proposal:
-            if len(edit_proposal) > 1:
-                raise ValueError(
-                    "If 'stop' key is present, no other key should be provided."
-                )
-            return
-
-        if "function" not in edit_proposal or "arguments" not in edit_proposal:
-            raise ValueError(
-                "Function call should contain 'function' and 'arguments' keys."
-            )
-
-        function_to_call = edit_proposal["function"]
-        args = edit_proposal["arguments"]
-
-        if function_to_call == "delete_element":
-            self._validate_delete_element(args)
-        elif function_to_call == "redirect_branch":
-            self._validate_redirect_branch(args)
-        elif function_to_call == "add_element":
-            self._validate_add_element(args)
-        elif function_to_call == "move_element":
-            self._validate_move_element(args)
-        elif function_to_call == "update_element":
-            self._validate_update_element(args)
-        else:
-            raise ValueError(f"Function '{function_to_call}' not found.")
-
-    def _validate_update_element(self, args):
-        if "new_element" not in args:
-            raise ValueError("Arguments should contain 'new_element' key.")
-        elif len(args) > 1:
-            raise ValueError("Arguments should contain only 'new_element' key.")
-        validate_element(args["new_element"])
-
-    def _validate_move_element(self, args):
-        if "element_id" not in args:
-            raise ValueError("Arguments should contain 'element_id' key.")
-        elif "before_id" in args and "after_id" in args:
-            raise ValueError(
-                "Only one of 'before_id' and 'after_id' should be provided."
-            )
-        elif "before_id" not in args and "after_id" not in args:
-            raise ValueError("Either 'before_id' or 'after_id' should be provided.")
-        elif len(args) > 2:
-            raise ValueError(
-                "Arguments should contain only 'element_id' and either 'before_id' or 'after_id' keys."
-            )
-
-    def _validate_add_element(self, args):
-        if "element" not in args:
-            raise ValueError("Arguments should contain 'element' key.")
-        elif "before_id" in args and "after_id" in args:
-            raise ValueError(
-                "Only one of 'before_id' and 'after_id' should be provided."
-            )
-        elif "before_id" not in args and "after_id" not in args:
-            raise ValueError("Either 'before_id' or 'after_id' should be provided.")
-        elif len(args) > 2:
-            raise ValueError(
-                "Arguments should contain only 'element' and either 'before_id' or 'after_id' keys."
-            )
-        validate_element(args["element"])
-
-    def _validate_redirect_branch(self, args):
-        if "branch_condition" not in args or "next_id" not in args:
-            raise ValueError(
-                "Arguments should contain 'branch_condition' and 'next_id' keys."
-            )
-        elif len(args) > 2:
-            raise ValueError(
-                "Arguments should contain only 'branch_condition' and 'next_id' keys."
-            )
-
-    def _validate_delete_element(self, args):
-        if "element_id" not in args:
-            raise ValueError("Arguments should contain 'element_id' key.")
-        elif len(args) > 1:
-            raise ValueError("Arguments should contain only 'element_id' key.")
+        return updated_process
