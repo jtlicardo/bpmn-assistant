@@ -8,8 +8,6 @@ from pydantic import BaseModel
 from bpmn_assistant.config import logger
 from bpmn_assistant.core.enums.models import (
     AnthropicModels,
-    FireworksAIModels,
-    GoogleModels,
     OpenAIModels,
 )
 from bpmn_assistant.core.enums.output_modes import OutputMode
@@ -21,9 +19,7 @@ class LiteLLMProvider(LLMProvider):
     def __init__(self, api_key: str, output_mode: OutputMode = OutputMode.JSON):
         self.output_mode = output_mode
         os.environ["ANTHROPIC_API_KEY"] = api_key
-        os.environ["FIREWORKS_AI_API_KEY"] = api_key
         os.environ["OPENAI_API_KEY"] = api_key
-        os.environ["GEMINI_API_KEY"] = api_key
 
     def _is_openai_model(self, model: str) -> bool:
         """Check if the given model is an OpenAI model."""
@@ -132,9 +128,7 @@ class LiteLLMProvider(LLMProvider):
 
     def check_model_compatibility(self, model: str) -> bool:
         return (
-            model in [m.value for m in FireworksAIModels]
-            or model in [m.value for m in OpenAIModels]
-            or model in [m.value for m in GoogleModels]
+            model in [m.value for m in OpenAIModels]
             or model in [m.value for m in AnthropicModels]
         )
 

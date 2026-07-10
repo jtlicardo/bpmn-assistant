@@ -34,30 +34,6 @@
           persistent-hint
         />
 
-        <v-text-field
-          v-model="keys.google"
-          label="Google API Key (optional)"
-          placeholder="..."
-          type="password"
-          variant="outlined"
-          density="comfortable"
-          class="mb-3"
-          hint="For Gemini models"
-          persistent-hint
-        />
-
-        <v-text-field
-          v-model="keys.fireworks"
-          label="Fireworks AI API Key (optional)"
-          placeholder="..."
-          type="password"
-          variant="outlined"
-          density="comfortable"
-          class="mb-3"
-          hint="For Llama, Qwen, Deepseek models"
-          persistent-hint
-        />
-
         <v-alert v-if="errorMessage" type="error" variant="tonal" class="mt-3">
           {{ errorMessage }}
         </v-alert>
@@ -112,8 +88,6 @@ export default {
       keys: {
         openai: '',
         anthropic: '',
-        google: '',
-        fireworks: '',
       },
       errorMessage: '',
     };
@@ -147,8 +121,6 @@ export default {
           const parsed = JSON.parse(stored);
           this.keys.openai = parsed.openai_api_key || '';
           this.keys.anthropic = parsed.anthropic_api_key || '';
-          this.keys.google = parsed.google_api_key || '';
-          this.keys.fireworks = parsed.fireworks_api_key || '';
         } catch (e) {
           console.error('Failed to parse stored API keys', e);
         }
@@ -163,13 +135,6 @@ export default {
       if (this.keys.anthropic.trim()) {
         apiKeys.anthropic_api_key = this.keys.anthropic.trim();
       }
-      if (this.keys.google.trim()) {
-        apiKeys.google_api_key = this.keys.google.trim();
-      }
-      if (this.keys.fireworks.trim()) {
-        apiKeys.fireworks_api_key = this.keys.fireworks.trim();
-      }
-
       sessionStorage.setItem('bpmn_api_keys', JSON.stringify(apiKeys));
       this.$emit('keys-updated');
       this.$emit('close');
@@ -179,8 +144,6 @@ export default {
       this.keys = {
         openai: '',
         anthropic: '',
-        google: '',
-        fireworks: '',
       };
       this.$emit('keys-updated');
       this.$emit('close');

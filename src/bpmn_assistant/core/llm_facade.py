@@ -29,8 +29,6 @@ class LLMFacade:
         supported_providers = {
             Provider.OPENAI,
             Provider.ANTHROPIC,
-            Provider.FIREWORKS_AI,
-            Provider.GOOGLE,
         }
         if provider not in supported_providers:
             raise ValueError(f"Unsupported LLM provider: {provider}")

@@ -24,16 +24,11 @@ const Models = Object.freeze({
   GPT_4_1: 'gpt-4.1',
   SONNET_4_5: 'claude-sonnet-4-5-20250929',
   OPUS_4_6: 'claude-opus-4-6',
-  GEMINI_3_1_PRO: 'gemini/gemini-3.1-pro-preview',
-  GEMINI_3_FLASH: 'gemini/gemini-3-flash-preview',
-  KIMI_K2P5: 'fireworks_ai/kimi-k2p5',
 });
 
 const Providers = Object.freeze({
   OPENAI: 'openai',
   ANTHROPIC: 'anthropic',
-  GOOGLE: 'google',
-  FIREWORKS_AI: 'fireworks_ai',
 });
 
 export default {
@@ -63,21 +58,6 @@ export default {
           value: Models.OPUS_4_6,
           title: 'Claude Opus 4.6',
           provider: Providers.ANTHROPIC,
-        },
-        {
-          value: Models.GEMINI_3_FLASH,
-          title: 'Gemini 3 Flash',
-          provider: Providers.GOOGLE,
-        },
-        {
-          value: Models.GEMINI_3_1_PRO,
-          title: 'Gemini 3.1 Pro',
-          provider: Providers.GOOGLE,
-        },
-        {
-          value: Models.KIMI_K2P5,
-          title: 'Kimi K2.5',
-          provider: Providers.FIREWORKS_AI,
         },
       ],
       availableProviders: [],
@@ -117,12 +97,6 @@ export default {
           if (apiKeys.anthropic_api_key) {
             this.availableProviders.push(Providers.ANTHROPIC);
           }
-          if (apiKeys.google_api_key) {
-            this.availableProviders.push(Providers.GOOGLE);
-          }
-          if (apiKeys.fireworks_api_key) {
-            this.availableProviders.push(Providers.FIREWORKS_AI);
-          }
         } else {
           // Local mode: check backend (which uses .env file)
           const response = await fetch(
@@ -153,10 +127,6 @@ export default {
           this.onModelChange(Models.GPT_5_2);
         } else if (this.availableProviders.includes(Providers.ANTHROPIC)) {
           this.onModelChange(Models.OPUS_4_6);
-        } else if (this.availableProviders.includes(Providers.GOOGLE)) {
-          this.onModelChange(Models.GEMINI_3_1_PRO);
-        } else if (this.availableProviders.includes(Providers.FIREWORKS_AI)) {
-          this.onModelChange(Models.KIMI_K2P5);
         }
       } catch (error) {
         console.error('Error fetching available providers', error);

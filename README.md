@@ -74,8 +74,6 @@ docker-compose up --build
 At least one of the following API keys:
 - [OpenAI API key](https://platform.openai.com/docs/quickstart)
 - [Anthropic API key](https://console.anthropic.com/)
-- [Google AI Studio (Gemini) API key](https://aistudio.google.com/app/apikey)
-- [Fireworks AI API key](https://docs.fireworks.ai/getting-started/quickstart)
 
 Note: You can use any combination of the API keys above, but at least one is required to use the app.
 
@@ -94,15 +92,6 @@ Additional prerequisites for local deployment:
 
 * Claude Sonnet 4.5
 * Claude Opus 4.6
-
-### Google
-
-* Gemini 3 Flash Preview
-* Gemini 3.1 Pro Preview
-
-### Fireworks AI
-
-* Kimi K2.5
 
 ## Core features
 
