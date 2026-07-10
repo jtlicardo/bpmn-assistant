@@ -2,9 +2,10 @@ from enum import Enum
 
 
 class OpenAIModels(Enum):
-    GPT_5_2 = "gpt-5.2-2025-12-11"
-    GPT_4_1 = "gpt-4.1"
+    GPT_5_6_SOL = "gpt-5.6-sol"
+    GPT_5_6_LUNA = "gpt-5.6-luna"
+
 
 class AnthropicModels(Enum):
-    SONNET_4_5 = "claude-sonnet-4-5-20250929"
-    OPUS_4_6 = "claude-opus-4-6"
+    OPUS_4_8 = "claude-opus-4-8"
+    SONNET_5 = "claude-sonnet-5"

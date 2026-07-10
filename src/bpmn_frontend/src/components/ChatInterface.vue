@@ -270,8 +270,8 @@ export default {
   computed: {
     isOpenAIModel() {
       return (
-        this.selectedModel === 'gpt-5.2-2025-12-11' ||
-        this.selectedModel === 'gpt-4.1'
+        this.selectedModel === 'gpt-5.6-sol' ||
+        this.selectedModel === 'gpt-5.6-luna'
       );
     },
     hasImages() {

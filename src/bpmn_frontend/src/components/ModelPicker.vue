@@ -20,10 +20,10 @@ import { bpmnAssistantUrl, isHostedVersion } from '../config';
 import { getApiKeys } from '../utils/apiKeys';
 
 const Models = Object.freeze({
-  GPT_5_2: 'gpt-5.2-2025-12-11',
-  GPT_4_1: 'gpt-4.1',
-  SONNET_4_5: 'claude-sonnet-4-5-20250929',
-  OPUS_4_6: 'claude-opus-4-6',
+  GPT_5_6_SOL: 'gpt-5.6-sol',
+  GPT_5_6_LUNA: 'gpt-5.6-luna',
+  OPUS_4_8: 'claude-opus-4-8',
+  SONNET_5: 'claude-sonnet-5',
 });
 
 const Providers = Object.freeze({
@@ -44,19 +44,23 @@ export default {
       selectedModel: '',
       models: [
         {
-          value: Models.GPT_5_2,
-          title: 'GPT-5.2',
+          value: Models.GPT_5_6_SOL,
+          title: 'GPT-5.6 Sol',
           provider: Providers.OPENAI,
         },
-        { value: Models.GPT_4_1, title: 'GPT-4.1', provider: Providers.OPENAI },
         {
-          value: Models.SONNET_4_5,
-          title: 'Claude Sonnet 4.5',
+          value: Models.GPT_5_6_LUNA,
+          title: 'GPT-5.6 Luna',
+          provider: Providers.OPENAI,
+        },
+        {
+          value: Models.OPUS_4_8,
+          title: 'Claude Opus 4.8',
           provider: Providers.ANTHROPIC,
         },
         {
-          value: Models.OPUS_4_6,
-          title: 'Claude Opus 4.6',
+          value: Models.SONNET_5,
+          title: 'Claude Sonnet 5',
           provider: Providers.ANTHROPIC,
         },
       ],
@@ -124,9 +128,9 @@ export default {
         this.$parent.setHasAvailableProviders(hasProviders);
 
         if (this.availableProviders.includes(Providers.OPENAI)) {
-          this.onModelChange(Models.GPT_5_2);
+          this.onModelChange(Models.GPT_5_6_SOL);
         } else if (this.availableProviders.includes(Providers.ANTHROPIC)) {
-          this.onModelChange(Models.OPUS_4_6);
+          this.onModelChange(Models.OPUS_4_8);
         }
       } catch (error) {
         console.error('Error fetching available providers', error);

@@ -85,13 +85,13 @@ Additional prerequisites for local deployment:
 
 ### OpenAI
 
-* GPT-5.2
-* GPT-4.1
+* GPT-5.6 Sol
+* GPT-5.6 Luna
 
 ### Anthropic
 
-* Claude Sonnet 4.5
-* Claude Opus 4.6
+* Claude Opus 4.8
+* Claude Sonnet 5
 
 ## Core features
 

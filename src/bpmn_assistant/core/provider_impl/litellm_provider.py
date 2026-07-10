@@ -1,5 +1,4 @@
 import json
-import os
 from typing import Any, Generator
 
 from litellm import completion
@@ -17,9 +16,8 @@ from bpmn_assistant.core.llm_provider import LLMProvider
 
 class LiteLLMProvider(LLMProvider):
     def __init__(self, api_key: str, output_mode: OutputMode = OutputMode.JSON):
+        self.api_key = api_key
         self.output_mode = output_mode
-        os.environ["ANTHROPIC_API_KEY"] = api_key
-        os.environ["OPENAI_API_KEY"] = api_key
 
     def _is_openai_model(self, model: str) -> bool:
         """Check if the given model is an OpenAI model."""
@@ -55,6 +53,7 @@ class LiteLLMProvider(LLMProvider):
         self._validate_vision_support(model, messages)
 
         params: dict[str, Any] = {
+            "api_key": self.api_key,
             "model": model,
             "messages": messages,
         }
@@ -64,11 +63,8 @@ class LiteLLMProvider(LLMProvider):
 
         params["max_tokens"] = max_tokens
 
-        # GPT-5 models only support temperature=1
-        if model == OpenAIModels.GPT_5_2.value:
-            params["temperature"] = 1
-        else:
-            params["temperature"] = temperature
+        # Current reasoning and adaptive-thinking models only support temperature=1.
+        params["temperature"] = 1
 
         logger.debug(
             f"Sending prompt (model={model}): {json.dumps(messages, indent=2)}"
@@ -97,11 +93,11 @@ class LiteLLMProvider(LLMProvider):
     ) -> Generator[str, None, None]:
         self._validate_vision_support(model, messages)
 
-        # GPT-5 models only support temperature=1
-        if model == OpenAIModels.GPT_5_2.value:
-            temperature = 1
+        # Current reasoning and adaptive-thinking models only support temperature=1.
+        temperature = 1
 
         response = completion(
+            api_key=self.api_key,
             model=model,
             messages=messages,
             max_tokens=max_tokens,

@@ -12,14 +12,14 @@ from tests.fixtures.bpmn_loader import load_bpmn
 def anthropic_facade():
     load_dotenv(override=True)
     api_key = os.getenv("ANTHROPIC_API_KEY")
-    return LLMFacade(Provider.ANTHROPIC, api_key, AnthropicModels.SONNET_4.value)
+    return LLMFacade(Provider.ANTHROPIC, api_key, AnthropicModels.SONNET_5.value)
 
 
 @pytest.fixture
 def openai_facade():
     load_dotenv(override=True)
     api_key = os.getenv("OPENAI_API_KEY")
-    return LLMFacade(Provider.OPENAI, api_key, OpenAIModels.GPT_4_1.value)
+    return LLMFacade(Provider.OPENAI, api_key, OpenAIModels.GPT_5_6_LUNA.value)
 
 
 @pytest.fixture
