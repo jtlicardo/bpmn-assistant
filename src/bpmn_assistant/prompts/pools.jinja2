@@ -2,10 +2,10 @@
 
 Pools and flat lanes are supported. Use lanes for roles/departments in one process;
 use separate pools for independent participants. Never connect sequence flows across
-pools. Message flows and nested lanes are not supported yet; explain that limitation
-when requested rather than inventing a connection.
+pools. Use message flows for communication between pools. Nested lanes are not supported.
 
-For a diagram with pools, the top-level "process" array contains ONLY pool objects.
+For a diagram with pools, the top-level "process" array contains pool objects and,
+optionally, text annotations and associations for the overall collaboration.
 Each pool contains the existing structured process array; its order defines sequence
 flow within that pool. Pools themselves are NOT connected in sequence.
 
@@ -26,3 +26,14 @@ Gateways may have join_id and join_lane_id; preserve imported values. Otherwise 
 join uses "<gateway-id>-join" and the gateway's lane. Remove lane_id/join_lane_id
 when removing lanes. Preserve all unchanged pools, elements, IDs and assignments.
 Without pools, continue using the original plain process array.
+
+Each pool may have a message_flows array containing its OUTGOING message flows.
+Example: "message_flows": [{"id": "order_message", "source_ref": "send_order",
+"target_ref": "receive_order", "label": "Order"}]. Both endpoints must exist in
+different pools. Store each flow only once, in the pool containing its source.
+Endpoints may be pool IDs (including empty pools), task IDs, or event IDs.
+Use send tasks or message throw/end events for sending and receive tasks or message
+start/catch events for receiving. Never connect message flows to lanes, gateways,
+sequence flows, or nodes within the same pool. Message flows do not define sequence
+order. Preserve unchanged message flows when editing; remove or update affected
+flows when deleting or moving their endpoints. Use replace_process for these edits.

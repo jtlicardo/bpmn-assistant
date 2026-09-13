@@ -26,6 +26,28 @@ class MessageItem(BaseModel):
     images: Optional[List[MessageImage]] = None
 
 
+class StandardLoop(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    type: Literal['standard']
+    condition: Optional[str] = None
+    test_before: Optional[bool] = Field(default=None, strict=True)
+    maximum: Optional[int] = Field(default=None, gt=0, strict=True)
+
+
+class MultiInstanceLoop(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    type: Literal['sequential', 'parallel']
+    cardinality: Optional[str] = None
+    completion_condition: Optional[str] = None
+
+
+class EventReference(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    id: str = Field(min_length=1)
+    name: Optional[str] = None
+    code: Optional[str] = None
+
+
 class BPMNTask(BaseModel):
     """
     Represents a BPMN task.
@@ -36,10 +58,15 @@ class BPMNTask(BaseModel):
     id: str
     label: str
     lane_id: Optional[str] = None
+    loop: Optional[Union[StandardLoop, MultiInstanceLoop]] = None
 
 
 EventType = Literal["startEvent", "endEvent", "intermediateThrowEvent", "intermediateCatchEvent"]
-EventDefinitionType = Literal["timerEventDefinition", "messageEventDefinition"]
+EventDefinitionType = Literal[
+    'timerEventDefinition', 'messageEventDefinition', 'signalEventDefinition',
+    'errorEventDefinition', 'escalationEventDefinition', 'conditionalEventDefinition',
+    'linkEventDefinition', 'terminateEventDefinition', 'compensateEventDefinition',
+]
 
 
 class BPMNEvent(BaseModel):
@@ -54,6 +81,11 @@ class BPMNEvent(BaseModel):
     label: Optional[str] = None
     eventDefinition: Optional[EventDefinitionType] = None
     lane_id: Optional[str] = None
+    event_reference: Optional[EventReference] = None
+    condition: Optional[str] = None
+    link_name: Optional[str] = None
+    activity_ref: Optional[str] = None
+    wait_for_completion: Optional[bool] = Field(default=None, strict=True)
 
 
 class ExclusiveGatewayBranch(BaseModel):
@@ -137,10 +169,37 @@ class ParallelGateway(BaseModel):
 BPMNElement = Union[BPMNTask, BPMNEvent, ExclusiveGateway, InclusiveGateway, ParallelGateway]
 
 
+class TextAnnotation(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    type: Literal['textAnnotation']
+    id: str = Field(min_length=1)
+    text: str
+
+
+class Association(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    type: Literal['association']
+    id: str = Field(min_length=1)
+    source_ref: str = Field(min_length=1)
+    target_ref: str = Field(min_length=1)
+    direction: Literal['None', 'One', 'Both'] = 'None'
+
+
+BPMNProcessItem = Union[BPMNElement, TextAnnotation, Association]
+
+
 class BPMNLane(BaseModel):
     model_config = ConfigDict(extra='forbid')
     id: str = Field(min_length=1)
     label: str
+
+
+class BPMNMessageFlow(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    id: str = Field(min_length=1)
+    source_ref: str = Field(min_length=1)
+    target_ref: str = Field(min_length=1)
+    label: str = ''
 
 
 class BPMNPool(BaseModel):
@@ -150,7 +209,8 @@ class BPMNPool(BaseModel):
     process_id: str = Field(min_length=1)
     label: str
     lanes: List[BPMNLane] = Field(default_factory=list)
-    process: List[BPMNElement]
+    process: List[BPMNProcessItem]
+    message_flows: List[BPMNMessageFlow] = Field(default_factory=list)
 
 
 class ProcessModel(BaseModel):
@@ -159,7 +219,7 @@ class ProcessModel(BaseModel):
     that can be tasks, events, or gateways.
     """
 
-    process: List[Union[BPMNElement, BPMNPool]]
+    process: List[Union[BPMNProcessItem, BPMNPool]]
 
 
 class EditProposal(BaseModel):

@@ -4,7 +4,8 @@ import xml.etree.ElementTree as ET
 from bpmn_assistant.config import logger
 from bpmn_assistant.services.bpmn_process_transformer import BpmnProcessTransformer
 from bpmn_assistant.services.pools import has_pools
-from bpmn_assistant.services.validate_bpmn import validate_pools
+from bpmn_assistant.services.validate_bpmn import validate_bpmn, validate_pools
+from bpmn_assistant.services.element_details import ARTIFACT_TYPES, write_artifacts, write_event_details, write_loop
 
 
 class BpmnXmlGenerator:
@@ -26,6 +27,8 @@ class BpmnXmlGenerator:
         if has_pools(process):
             validate_pools(process)
             return self._create_pools_xml(process)
+        if process:
+            validate_bpmn(process)
         transformed_process = self.transformer.transform(process)
         logger.debug(
             f"Transformed process:\n{json.dumps(transformed_process, indent=2)}"
@@ -69,6 +72,9 @@ class BpmnXmlGenerator:
                 # Create event definition element with a unique ID
                 event_def_elem = ET.SubElement(elem, event_def_type)
                 event_def_elem.set("id", f"{event_def_type}_{element['id']}")
+                write_event_details(event_def_elem, element, root)
+            if element.get('loop'):
+                write_loop(elem, element['loop'])
 
         # Add flows
         for flow in transformed_process["flows"]:
@@ -81,11 +87,14 @@ class BpmnXmlGenerator:
             if flow["condition"]:
                 seq_flow.set("name", flow["condition"])
 
+        write_artifacts(process_element, process)
         xml_string = ET.tostring(root, encoding="unicode")
 
         return xml_string
 
     def _create_pools_xml(self, pools: list[dict]) -> str:
+        artifacts = [item for item in pools if item['type'] in ARTIFACT_TYPES]
+        pools = [item for item in pools if item['type'] == 'pool']
         namespace = 'http://www.omg.org/spec/BPMN/20100524/MODEL'
         ET.register_namespace('', namespace)
         def tag(name):
@@ -111,4 +120,19 @@ class BpmnXmlGenerator:
                             ET.SubElement(lane_element, tag('flowNodeRef')).text = node['id']
                 process_element.insert(0, lane_set)
             root.append(process_element)
+            for definition in process_xml:
+                if definition.tag != tag('process') and not any(
+                    child.get('id') == definition.get('id') for child in root
+                ):
+                    root.append(definition)
+        for pool in pools:
+            for flow in pool.get('message_flows', []):
+                attributes = {
+                    'id': flow['id'], 'sourceRef': flow['source_ref'],
+                    'targetRef': flow['target_ref'],
+                }
+                if flow.get('label'):
+                    attributes['name'] = flow['label']
+                ET.SubElement(collaboration, tag('messageFlow'), attributes)
+        write_artifacts(collaboration, artifacts)
         return ET.tostring(root, encoding='unicode')

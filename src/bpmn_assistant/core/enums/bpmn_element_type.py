@@ -23,4 +23,11 @@ class EventDefinitionType(Enum):
     """Event definition types for BPMN events"""
     TIMER = "timerEventDefinition"
     MESSAGE = "messageEventDefinition"
+    SIGNAL = "signalEventDefinition"
+    ERROR = "errorEventDefinition"
+    ESCALATION = "escalationEventDefinition"
+    CONDITIONAL = "conditionalEventDefinition"
+    LINK = "linkEventDefinition"
+    TERMINATE = "terminateEventDefinition"
+    COMPENSATION = "compensateEventDefinition"
     NONE = None  # For events without definitions

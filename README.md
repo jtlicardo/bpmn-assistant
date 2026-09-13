@@ -9,7 +9,7 @@ Describe a business process. Get a BPMN diagram.
 
 [Try BPMN Assistant](https://bpmn-frontend.onrender.com)
 
-![Pools and lanes](assets/pools_lanes.png)
+![Purchase order process with message flows, a multi-instance task, and a text annotation](assets/app_screenshot.png)
 
 ## Quickstart
 
@@ -95,7 +95,7 @@ Additional prerequisites for local deployment:
 
 ## Core features
 
-**Create** - Generate BPMN diagrams from plain-language descriptions, including pools and lanes.
+**Create** - Generate BPMN diagrams from plain-language descriptions, including pools, lanes, and message flows.
 
 **Edit** - Modify processes conversationally or import BPMN files with drag and drop.
 
@@ -103,7 +103,7 @@ Additional prerequisites for local deployment:
 
 ## Supported elements
 
-The application currently supports a subset of BPMN elements, including pools and lanes:
+The application currently supports a subset of BPMN elements, including pools, lanes, and message flows:
 
 ### Tasks
 * Task
@@ -115,6 +115,8 @@ The application currently supports a subset of BPMN elements, including pools an
 * Manual task
 * Script task
 
+Tasks also support loop and sequential/parallel multi-instance markers.
+
 ### Gateways
 * Exclusive gateway
 * Parallel gateway
@@ -125,10 +127,12 @@ The application currently supports a subset of BPMN elements, including pools an
 * Start event
 * Timer start event
 * Message start event
+* Signal and conditional start events
 
 **End events**
 * End event
 * Message end event
+* Signal, error, escalation, terminate, and compensation end events
 
 **Intermediate events**
 * Intermediate throw event (generic)
@@ -136,12 +140,17 @@ The application currently supports a subset of BPMN elements, including pools an
 * Intermediate catch event (generic)
 * Intermediate catch event (timer)
 * Intermediate catch event (message)
+* Signal and link intermediate events (throw/catch)
+* Escalation and compensation intermediate throw events
+* Conditional intermediate catch event
+
+Text annotations and their associations are also supported.
 
 ## Limitations
 
 * The AI assistant does not "see" manual edits made to the diagram. It always responds based on its last generated
   version. Keep this in mind when interacting with the assistant after making manual changes.
-* Message flows and nested lanes are not supported yet.
+* Nested lanes are not supported yet.
 * Each non-empty pool must contain exactly one start event.
 
 ## Paper

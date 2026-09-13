@@ -19,6 +19,13 @@ Always try to specify the most specific task type:
 Each task must be atomic - representing a single unit of work. Break down complex activities into multiple separate tasks.
 Labels must be clear and concise (ideally 2-4 words).
 
+Tasks can optionally have a loop marker. Use "loop": {"type": "standard"} for
+repetition, optionally with condition (text), test_before (boolean), and maximum
+(positive integer). For one instance per item, use "loop": {"type": "sequential"}
+or {"type": "parallel"}, optionally with cardinality (expression as a string) and
+completion_condition (text). A task can have only one of these markers. Preserve
+existing marker settings when editing. Markers do not add sequence-flow cycles.
+
 ```json
 {
     "type": String = "task" | "userTask" | "serviceTask" | "sendTask" | "receiveTask" | "businessRuleTask" | "manualTask" | "scriptTask"
@@ -37,19 +44,53 @@ Events can optionally have an event definition that specifies what triggers or i
 - Omit 'eventDefinition' for generic/none events
 
 Event types:
-- 'startEvent' - starts the process (can have timerEventDefinition or messageEventDefinition)
-- 'endEvent' - ends the process (can have messageEventDefinition)
-- 'intermediateThrowEvent' - throws/triggers an event during the process (typically with messageEventDefinition)
-- 'intermediateCatchEvent' - waits for an event during the process (can have timerEventDefinition or messageEventDefinition)
+- 'startEvent': timerEventDefinition, messageEventDefinition, signalEventDefinition, conditionalEventDefinition
+- 'endEvent': messageEventDefinition, signalEventDefinition, errorEventDefinition, escalationEventDefinition, terminateEventDefinition, compensateEventDefinition
+- 'intermediateThrowEvent': messageEventDefinition, signalEventDefinition, escalationEventDefinition, linkEventDefinition, compensateEventDefinition
+- 'intermediateCatchEvent': timerEventDefinition, messageEventDefinition, signalEventDefinition, conditionalEventDefinition, linkEventDefinition
+
+Signal events broadcast/receive signals. Error end events throw an error; escalation
+events raise an escalation; terminate end events stop all activity in their pool.
+Compensation throw/end events trigger compensation, optionally for activity_ref
+(a task ID in the same pool), with optional wait_for_completion (boolean).
+Boundary events, compensation handlers, and subprocesses are not supported.
+
+Signal, error, escalation, and message events may specify event_reference:
+{"id": "signal_ready", "name": "Ready"}. Reuse identical references for matching
+events throughout the diagram. Error/escalation references may also have code (text).
+Conditional events require condition (text describing the condition).
+
+Link events require link_name. In each process/pool, a name must have exactly one
+intermediateCatchEvent and exactly one intermediateThrowEvent (layout requirement). Put the catch and
+its continuation after the throw in the structured array. A link throw jumps to
+the catch with the same name, without a sequence-flow connection; the catch has
+no incoming sequence flow. Do not use links between pools.
 
 ```json
 {
     "type": String = "startEvent" | "endEvent" | "intermediateThrowEvent" | "intermediateCatchEvent",
     "id": String,
     "label": String, // OPTIONAL: short event description
-    "eventDefinition": String = "timerEventDefinition" | "messageEventDefinition", // OPTIONAL: event trigger type
+    "eventDefinition": String, // OPTIONAL: one of the definitions allowed above for this event type
 }
 ```
+
+## Text annotations
+
+Place text annotations and their associations at the end of the process array
+(inside the pool's process for pooled diagrams), never inside gateway branches.
+They do not execute or affect sequence order and do not need lane_id.
+For notes outside pools, place the annotation and association alongside the pool
+objects in the top-level array. These associations may reference pool IDs or node IDs.
+Example:
+{"type": "textAnnotation", "id": "note", "text": "Approval required above 1000 EUR"}
+{"type": "association", "id": "note_link", "source_ref": "review", "target_ref": "note", "direction": "None"}
+An annotation can stand alone or have multiple associations. Associations connect
+an annotation to an existing task, event, gateway, or annotation in the same process.
+direction can be None (default, undirected), One, or Both. Never use sequence flows
+or message flows to connect annotations. Preserve text and associations when editing.
+Use replace_process for edits involving annotations, event details, or loop markers;
+return the entire updated diagram and remove associations when deleting endpoints.
 
 ## Gateways
 

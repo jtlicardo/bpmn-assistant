@@ -150,5 +150,10 @@ def get_supported_bpmn_elements() -> str:
         parts.append(f"Event Definitions: {', '.join(event_defs)}")
 
     parts.append("Sequence Flows")
+    parts.append("Pools and lanes (no nested lanes)")
+    parts.append("Message flows between pools")
+    parts.append("Text annotations and associations")
+    parts.append("Task loop and sequential/parallel multi-instance markers")
+    parts.append("Boundary events and subprocesses are not supported")
 
     return "; ".join(parts)

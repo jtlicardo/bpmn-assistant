@@ -60,7 +60,7 @@ def test_join_lane_survives_import_and_export():
     (lambda p: p[1]['process'][0].update(id=p[0]['process'][0]['id']), 'Duplicate'),
     (lambda p: p[1]['lanes'].append(deepcopy(p[1]['lanes'][0])), 'Duplicate'),
     (lambda p: p.append({'type': 'startEvent', 'id': 'outside'}), 'do not mix'),
-    (lambda p: p[0].update(message_flows=[]), 'Extra inputs'),
+    (lambda p: p[0].update(unsupported=[]), 'Extra inputs'),
 ])
 def test_invalid_pool_edits_are_rejected(pools, change, match):
     change(pools)
@@ -78,11 +78,16 @@ def test_cross_pool_sequence_flow_is_rejected(pools):
         validate_bpmn(pools)
 
 
-def test_message_flow_import_is_rejected_instead_of_dropped():
+def test_message_flow_import_export_preserves_endpoints_and_label():
     xml = FIXTURE.read_text(encoding='utf-8-sig').replace('</bpmn:collaboration>',
         '<bpmn:messageFlow id="m" sourceRef="Pool_Customer" targetRef="Pool_Supplier" /></bpmn:collaboration>')
-    with pytest.raises(ValueError, match='Message flows are not supported'):
-        BpmnJsonGenerator().create_bpmn_json(xml)
+    pools = BpmnJsonGenerator().create_bpmn_json(xml)
+    assert pools[0]['message_flows'] == [{
+        'id': 'm', 'source_ref': 'Pool_Customer', 'target_ref': 'Pool_Supplier', 'label': '',
+    }]
+    pools[0]['message_flows'][0]['label'] = 'Order & details'
+    ProcessModel.model_validate({'process': pools})
+    assert BpmnJsonGenerator().create_bpmn_json(BpmnXmlGenerator().create_bpmn_xml(pools)) == pools
 
 
 def test_nested_lane_import_is_rejected():
@@ -154,3 +159,96 @@ def test_modify_api_edits_lane_without_losing_other_pool(pools, monkeypatch):
     assert data['bpmn_json'] == changed
     assert data['bpmn_json'][0] == pools[0]
     assert BpmnJsonGenerator().create_bpmn_json(data['bpmn_xml']) == changed
+
+@pytest.fixture
+def message_pools(pools):
+    pools[0]['message_flows'] = [{
+        'id': 'order_message', 'source_ref': 'Customer_SendOrder',
+        'target_ref': 'Supplier_OrderReceived', 'label': 'Purchase order',
+    }]
+    pools[1]['message_flows'] = [{
+        'id': 'confirmation_message', 'source_ref': 'Supplier_Confirm',
+        'target_ref': 'Customer_Confirmation', 'label': 'Confirmation',
+    }]
+    return pools
+
+
+def test_message_flows_create_edit_and_roundtrip(message_pools):
+    llm = Mock()
+    llm.call.return_value = {'process': message_pools}
+    created = BpmnModelingService().create_bpmn(llm, [])
+    xml = BpmnXmlGenerator().create_bpmn_xml(created)
+    assert len(ET.fromstring(xml).findall('./b:collaboration/b:messageFlow', NS)) == 2
+    assert BpmnJsonGenerator().create_bpmn_json(xml) == message_pools
+    changed = deepcopy(message_pools)
+    changed[0]['message_flows'][0]['label'] = 'Updated order'
+    editor = BpmnEditingService(Mock(), message_pools, 'Rename the message')
+    edited = editor._update_process(message_pools, {
+        'function': 'replace_process', 'arguments': {'process': changed},
+    })
+    assert BpmnJsonGenerator().create_bpmn_json(BpmnXmlGenerator().create_bpmn_xml(edited)) == changed
+    assert message_pools[0]['message_flows'][0]['label'] == 'Purchase order'
+    changed[0]['message_flows'] = []
+    validate_bpmn(changed)
+
+
+@pytest.mark.parametrize('field,value,match', [
+    ('target_ref', 'missing', 'missing or unsupported'),
+    ('target_ref', 'Customer_Confirmation', 'different pools'),
+    ('target_ref', 'Lane_Sales', 'missing or unsupported'),
+    ('target_ref', 'Supplier_End', 'sending/receiving'),
+    ('source_ref', 'Customer_Start', 'sending/receiving'),
+    ('source_ref', 'Supplier_Confirm', 'source pool'),
+    ('id', 'Supplier_Confirm', 'Duplicate'),
+])
+def test_invalid_message_flows_rejected_on_generation_and_import(message_pools, field, value, match):
+    xml = BpmnXmlGenerator().create_bpmn_xml(message_pools)
+    root = ET.fromstring(xml)
+    flow = root.find('./b:collaboration/b:messageFlow', NS)
+    flow.set({'source_ref': 'sourceRef', 'target_ref': 'targetRef'}.get(field, field), value)
+    # Source ownership is inferred on import, rather than represented in XML.
+    if match != 'source pool':
+        with pytest.raises(ValueError, match=match):
+            BpmnJsonGenerator().create_bpmn_json(ET.tostring(root, encoding='unicode'))
+    message_pools[0]['message_flows'][0][field] = value
+    with pytest.raises(ValueError, match=match):
+        BpmnXmlGenerator().create_bpmn_xml(message_pools)
+
+
+def test_message_flow_to_empty_pool(message_pools):
+    message_pools[1]['process'] = []
+    message_pools[1]['lanes'] = []
+    message_pools[1].pop('message_flows')
+    message_pools[0]['message_flows'][0]['target_ref'] = 'Pool_Supplier'
+    xml = BpmnXmlGenerator().create_bpmn_xml(message_pools)
+    assert BpmnJsonGenerator().create_bpmn_json(xml) == message_pools
+
+
+def test_message_flow_rejects_timer_endpoint(message_pools):
+    message_pools[1]['process'][0]['eventDefinition'] = 'timerEventDefinition'
+    with pytest.raises(ValueError, match='non-message event'):
+        validate_bpmn(message_pools)
+
+
+def test_message_flow_rejects_gateway_endpoint(message_pools):
+    message_pools[1]['process'].insert(1, {
+        'type': 'parallelGateway', 'id': 'split', 'lane_id': 'Lane_Sales',
+        'branches': [
+            [{'type': 'task', 'id': 'a', 'label': 'A', 'lane_id': 'Lane_Sales'}],
+            [{'type': 'task', 'id': 'b', 'label': 'B', 'lane_id': 'Lane_Sales'}],
+        ],
+    })
+    message_pools[0]['message_flows'][0]['target_ref'] = 'split'
+    with pytest.raises(ValueError, match='sending/receiving'):
+        validate_bpmn(message_pools)
+
+
+def test_deleting_message_endpoint_rejects_edit_without_mutating_original(message_pools):
+    changed = deepcopy(message_pools)
+    changed[0]['process'].pop(1)
+    editor = BpmnEditingService(Mock(), message_pools, 'Delete send order')
+    with pytest.raises(ValueError, match='missing or unsupported'):
+        editor._update_process(message_pools, {
+            'function': 'replace_process', 'arguments': {'process': changed},
+        })
+    assert message_pools[0]['process'][1]['id'] == 'Customer_SendOrder'

@@ -4,7 +4,8 @@ from typing import Any, Callable, Optional
 
 from bpmn_assistant.core.enums import BPMNElementType
 from bpmn_assistant.services.bpmn_process_transformer import BpmnProcessTransformer
-from bpmn_assistant.services.validate_bpmn import validate_pools
+from bpmn_assistant.services.validate_bpmn import validate_bpmn, validate_pools
+from bpmn_assistant.services.element_details import ARTIFACT_TYPES, is_link, read_artifacts, read_details
 
 
 class BpmnJsonGenerator:
@@ -18,6 +19,7 @@ class BpmnJsonGenerator:
         self.process: list[dict[str, Any]] = []
         self.preserve_pool_metadata = False
         self.node_lanes: dict[str, str] = {}
+        self.root = None
 
     def _find_process_element(self, root: ET.Element) -> ET.Element:
         for elem in root.iter():
@@ -30,20 +32,24 @@ class BpmnJsonGenerator:
         Create the JSON representation of the process from the BPMN XML
         Constraints:
             - Supported elements: task, userTask, serviceTask, sendTask, receiveTask, businessRuleTask, manualTask, scriptTask, startEvent, endEvent, intermediateThrowEvent, intermediateCatchEvent, exclusiveGateway, inclusiveGateway, parallelGateway
-            - Supported event definitions: timerEventDefinition, messageEventDefinition
+            - Supported event definitions are validated against each event's position
             - The process must have only one start event
-            - Pools and flat lanes are supported; message flows and nested lanes are not
+            - Pools, flat lanes, and message flows are supported; nested lanes are not
             - Parallel gateways must have a corresponding join gateway
         """
         root = ET.fromstring(bpmn_xml)
+        self.root = root
         ns = {'b': 'http://www.omg.org/spec/BPMN/20100524/MODEL'}
-        if root.find('.//b:messageFlow', ns) is not None:
-            raise ValueError('Message flows are not supported yet. Import a diagram with pools and lanes only.')
+        message_flows = root.findall('./b:collaboration/b:messageFlow', ns)
         participants = root.findall('./b:collaboration/b:participant', ns)
         processes = root.findall('./b:process', ns)
+        if message_flows and not participants:
+            raise ValueError('Message flows require pools.')
         if participants or root.find('.//b:lane', ns) is not None or len(processes) > 1:
-            return self._read_pools(participants, processes, ns)
+            return self._read_pools(participants, processes, ns, message_flows)
         process_element = self._find_process_element(root)
+        if read_artifacts(process_element):
+            self.preserve_pool_metadata = True
         self._get_elements_and_flows(process_element)
         start_events = [
             elem
@@ -53,9 +59,15 @@ class BpmnJsonGenerator:
         if len(start_events) != 1:
             raise ValueError("Process must contain exactly one start event")
         self._build_process_structure()
+        if any(node.get('eventDefinition') == 'linkEventDefinition' for node in self.elements.values()):
+            emitted = {node['id'] for node in BpmnProcessTransformer().transform(self.process)['elements']}
+            if emitted != set(self.elements):
+                raise ValueError('The link events contain disconnected or unsupported process structure.')
+        self.process.extend(read_artifacts(process_element))
+        validate_bpmn(self.process)
         return self.process
 
-    def _read_pools(self, participants, processes, ns):
+    def _read_pools(self, participants, processes, ns, message_flows):
 
         by_id = {element.get('id'): element for element in processes}
         referenced = {participant.get('processRef') for participant in participants}
@@ -79,6 +91,7 @@ class BpmnJsonGenerator:
             }
             if process_element is not None:
                 generator = BpmnJsonGenerator()
+                generator.root = self.root
                 generator.preserve_pool_metadata = True
                 for lane in process_element.findall('./b:laneSet/b:lane', ns):
                     if lane.find('b:childLaneSet', ns) is not None:
@@ -102,10 +115,27 @@ class BpmnJsonGenerator:
                 emitted = {node['id'] for node in BpmnProcessTransformer().transform(pool['process'])['elements']}
                 if emitted != set(generator.elements):
                     raise ValueError('The pool contains disconnected or unsupported process structure.')
-                allowed = {element.value for element in BPMNElementType} | {'sequenceFlow', 'laneSet', 'documentation'}
+                pool['process'].extend(read_artifacts(process_element))
+                allowed = {element.value for element in BPMNElementType} | ARTIFACT_TYPES | {'sequenceFlow', 'laneSet', 'documentation'}
                 if any(child.tag.split('}')[-1] not in allowed for child in process_element):
                     raise ValueError('The pool contains unsupported BPMN elements.')
             pools.append(pool)
+        source_pools = {}
+        for pool in pools:
+            source_pools[pool['id']] = pool
+            for node in BpmnProcessTransformer().transform(pool['process'])['elements']:
+                source_pools[node['id']] = pool
+        for flow in message_flows:
+            pool = source_pools.get(flow.get('sourceRef'))
+            if pool is None:
+                raise ValueError('Message flow refers to a missing or unsupported source endpoint.')
+            pool.setdefault('message_flows', []).append({
+                'id': flow.get('id'), 'source_ref': flow.get('sourceRef'),
+                'target_ref': flow.get('targetRef'), 'label': flow.get('name', ''),
+            })
+        collaboration = self.root.find('{*}collaboration')
+        if collaboration is not None:
+            pools.extend(read_artifacts(collaboration))
         validate_pools(pools)
         return pools
 
@@ -474,6 +504,15 @@ class BpmnJsonGenerator:
         )
 
     def _get_outgoing_flows(self, element_id: str) -> list[dict[str, str]]:
+        node = self.elements[element_id]
+        if is_link(node, 'intermediateThrowEvent'):
+            catches = [other for other in self.elements.values()
+                       if is_link(other, 'intermediateCatchEvent')
+                       and other.get('link_name') == node.get('link_name')]
+            if len(catches) != 1:
+                raise ValueError('Each link name must have exactly one matching catch event.')
+            return [{'id': f"link_{element_id}", 'source': element_id,
+                     'target': catches[0]['id'], 'condition': None}]
         return [flow for flow in self.flows.values() if flow["source"] == element_id]
 
     def _find_common_branch_endpoint(self, gateway_id: str) -> Optional[str]:
@@ -581,12 +620,7 @@ class BpmnJsonGenerator:
                     if default_flow:
                         self.elements[elem_id]["default_flow"] = default_flow
 
-                # Check for event definitions (timerEventDefinition, messageEventDefinition, etc.)
-                for child in elem:
-                    child_tag = child.tag.split("}")[-1]
-                    if child_tag.endswith("EventDefinition"):
-                        self.elements[elem_id]["eventDefinition"] = child_tag
-                        break
+                read_details(elem, self.elements[elem_id], self.root)
             elif tag == "sequenceFlow":
                 self.flows[elem_id] = {
                     "id": elem_id,
@@ -594,3 +628,8 @@ class BpmnJsonGenerator:
                     "target": elem.get("targetRef"),
                     "condition": elem.get("name"),
                 }
+        for flow in self.flows.values():
+            source = self.elements.get(flow['source'])
+            target = self.elements.get(flow['target'])
+            if source and is_link(source, 'intermediateThrowEvent') or target and is_link(target, 'intermediateCatchEvent'):
+                raise ValueError('Link throw events cannot have outgoing sequence flows; link catches cannot have incoming sequence flows.')

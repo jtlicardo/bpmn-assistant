@@ -1,5 +1,7 @@
 from typing import Optional
 
+from bpmn_assistant.services.element_details import ARTIFACT_TYPES, DETAIL_FIELDS, is_link
+
 
 class BpmnProcessTransformer:
     """
@@ -35,6 +37,7 @@ class BpmnProcessTransformer:
             }
         """
 
+        process = [item for item in process if item['type'] not in ARTIFACT_TYPES]
         elements: list[dict] = []
         flows: list[dict] = []
 
@@ -236,6 +239,9 @@ class BpmnProcessTransformer:
                 transformed_element['lane_id'] = element['lane_id']
             if "eventDefinition" in element:
                 transformed_element["eventDefinition"] = element["eventDefinition"]
+            for field in DETAIL_FIELDS:
+                if element.get(field) is not None:
+                    transformed_element[field] = element[field]
 
             elements.append(transformed_element)
 
@@ -260,6 +266,12 @@ class BpmnProcessTransformer:
             elif next_element_id and element["type"] != "endEvent":
                 # Add the flow between the current element and the next element in the process
                 add_flow(element["id"], next_element_id)
+
+        # Link events jump by name; they do not have a connecting sequence flow.
+        link_throws = {node['id'] for node in elements if is_link(node, 'intermediateThrowEvent')}
+        link_catches = {node['id'] for node in elements if is_link(node, 'intermediateCatchEvent')}
+        flows = [flow for flow in flows
+                 if flow['sourceRef'] not in link_throws and flow['targetRef'] not in link_catches]
 
         # Add incoming and outgoing flows to each element
         for element in elements:
