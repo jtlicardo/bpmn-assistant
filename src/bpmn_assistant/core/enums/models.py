@@ -7,5 +7,5 @@ class OpenAIModels(Enum):
 
 
 class AnthropicModels(Enum):
-    OPUS_4_8 = "claude-opus-4-8"
+    OPUS_5 = "claude-opus-5"
     SONNET_5 = "claude-sonnet-5"

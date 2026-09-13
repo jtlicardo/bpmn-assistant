@@ -22,7 +22,7 @@ import { getApiKeys } from '../utils/apiKeys';
 const Models = Object.freeze({
   GPT_5_6_SOL: 'gpt-5.6-sol',
   GPT_5_6_LUNA: 'gpt-5.6-luna',
-  OPUS_4_8: 'claude-opus-4-8',
+  OPUS_5: 'claude-opus-5',
   SONNET_5: 'claude-sonnet-5',
 });
 
@@ -54,8 +54,8 @@ export default {
           provider: Providers.OPENAI,
         },
         {
-          value: Models.OPUS_4_8,
-          title: 'Claude Opus 4.8',
+          value: Models.OPUS_5,
+          title: 'Claude Opus 5',
           provider: Providers.ANTHROPIC,
         },
         {
@@ -130,7 +130,7 @@ export default {
         if (this.availableProviders.includes(Providers.OPENAI)) {
           this.onModelChange(Models.GPT_5_6_SOL);
         } else if (this.availableProviders.includes(Providers.ANTHROPIC)) {
-          this.onModelChange(Models.OPUS_4_8);
+          this.onModelChange(Models.OPUS_5);
         }
       } catch (error) {
         console.error('Error fetching available providers', error);

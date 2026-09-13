@@ -90,7 +90,7 @@ Additional prerequisites for local deployment:
 
 ### Anthropic
 
-* Claude Opus 4.8
+* Claude Opus 5
 * Claude Sonnet 5
 
 ## Core features
