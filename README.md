@@ -5,9 +5,11 @@
 
 ![Logo](assets/bpmn_assistant_logo.png)
 
-LLM-powered creation, editing, and interpretation of Business Process Model and Notation (BPMN) diagrams.
+Describe a business process. Get a BPMN diagram.
 
-![Screenshot](assets/screenshot_1.png)
+[Try BPMN Assistant](https://bpmn-frontend.onrender.com)
+
+![Pools and lanes](assets/pools_lanes.png)
 
 https://github.com/user-attachments/assets/2f17bd99-f6fb-47a2-b33e-2190c3a834e2
 
@@ -95,16 +97,15 @@ Additional prerequisites for local deployment:
 
 ## Core features
 
-1. **Diagram creation** - Generates BPMN diagrams based on text descriptions.
-2. **Diagram editing** - Modifies BPMN diagrams based on user input.
-3. **Diagram interpretation** - Provides text descriptions of BPMN diagrams.
-4. **Drag-and-drop functionality** - Users can drag and drop BPMN files (containing only supported elements) into the
-   editor, then ask the LLM to edit or explain the process.
-5. **Vision support** - Upload images (flowcharts, sketches, diagrams) to create or modify BPMN processes. Currently available for OpenAI models only.
+**Create** — Generate BPMN diagrams from plain-language descriptions, including pools and lanes.
+
+**Edit** — Modify processes conversationally or import BPMN files with drag and drop.
+
+**Understand** — Ask questions about existing diagrams or use images to create and modify processes.
 
 ## Supported elements
 
-The application currently supports a subset of BPMN elements:
+The application currently supports a subset of BPMN elements, including pools and lanes:
 
 ### Tasks
 * Task
@@ -142,7 +143,8 @@ The application currently supports a subset of BPMN elements:
 
 * The AI assistant does not "see" manual edits made to the diagram. It always responds based on its last generated
   version. Keep this in mind when interacting with the assistant after making manual changes.
-* Pools and lanes are not supported due to limitations in the [BPMN Auto Layout](https://github.com/bpmn-io/bpmn-auto-layout) library.
+* Message flows and nested lanes are not supported yet.
+* Each non-empty pool must contain exactly one start event.
 
 ## Paper
 

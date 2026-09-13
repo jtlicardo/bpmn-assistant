@@ -1,6 +1,6 @@
 from typing import List, Optional, Union, Dict, Any
 
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel, RootModel, ConfigDict, Field
 from typing_extensions import Literal
 
 TaskType = Literal["task", "userTask", "serviceTask", "sendTask", "receiveTask", "businessRuleTask", "manualTask", "scriptTask"]
@@ -35,6 +35,7 @@ class BPMNTask(BaseModel):
     type: TaskType
     id: str
     label: str
+    lane_id: Optional[str] = None
 
 
 EventType = Literal["startEvent", "endEvent", "intermediateThrowEvent", "intermediateCatchEvent"]
@@ -52,6 +53,7 @@ class BPMNEvent(BaseModel):
     id: str
     label: Optional[str] = None
     eventDefinition: Optional[EventDefinitionType] = None
+    lane_id: Optional[str] = None
 
 
 class ExclusiveGatewayBranch(BaseModel):
@@ -79,6 +81,9 @@ class ExclusiveGateway(BaseModel):
     label: str
     has_join: bool
     branches: List[ExclusiveGatewayBranch]
+    lane_id: Optional[str] = None
+    join_id: Optional[str] = None
+    join_lane_id: Optional[str] = None
 
 
 class InclusiveGatewayBranch(BaseModel):
@@ -109,6 +114,9 @@ class InclusiveGateway(BaseModel):
     label: str
     has_join: bool
     branches: List[InclusiveGatewayBranch]
+    lane_id: Optional[str] = None
+    join_id: Optional[str] = None
+    join_lane_id: Optional[str] = None
 
 
 class ParallelGateway(BaseModel):
@@ -121,9 +129,28 @@ class ParallelGateway(BaseModel):
     type: Literal["parallelGateway"]
     id: str
     branches: List[List["BPMNElement"]]
+    lane_id: Optional[str] = None
+    join_id: Optional[str] = None
+    join_lane_id: Optional[str] = None
 
 
 BPMNElement = Union[BPMNTask, BPMNEvent, ExclusiveGateway, InclusiveGateway, ParallelGateway]
+
+
+class BPMNLane(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    id: str = Field(min_length=1)
+    label: str
+
+
+class BPMNPool(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    type: Literal['pool']
+    id: str = Field(min_length=1)
+    process_id: str = Field(min_length=1)
+    label: str
+    lanes: List[BPMNLane] = Field(default_factory=list)
+    process: List[BPMNElement]
 
 
 class ProcessModel(BaseModel):
@@ -132,7 +159,7 @@ class ProcessModel(BaseModel):
     that can be tasks, events, or gateways.
     """
 
-    process: List[BPMNElement]
+    process: List[Union[BPMNElement, BPMNPool]]
 
 
 class EditProposal(BaseModel):

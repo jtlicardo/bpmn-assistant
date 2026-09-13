@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_Order" targetNamespace="https://bpmn-assistant.example/prototype">
+  <bpmn:collaboration id="Collaboration_Order">
+    <bpmn:participant id="Pool_Customer" name="Customer" processRef="Process_Customer" />
+    <bpmn:participant id="Pool_Supplier" name="Supplier" processRef="Process_Supplier" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_Customer" isExecutable="false">
+    <bpmn:startEvent id="Customer_Start" name="Order needed" />
+    <bpmn:sendTask id="Customer_SendOrder" name="Send purchase order" />
+    <bpmn:intermediateCatchEvent id="Customer_Confirmation" name="Confirmation received">
+      <bpmn:messageEventDefinition id="EventDefinition_Confirmation" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="Customer_End" name="Order confirmed" />
+    <bpmn:sequenceFlow id="Customer_Flow1" sourceRef="Customer_Start" targetRef="Customer_SendOrder" />
+    <bpmn:sequenceFlow id="Customer_Flow2" sourceRef="Customer_SendOrder" targetRef="Customer_Confirmation" />
+    <bpmn:sequenceFlow id="Customer_Flow3" sourceRef="Customer_Confirmation" targetRef="Customer_End" />
+  </bpmn:process>
+  <bpmn:process id="Process_Supplier" isExecutable="false">
+    <bpmn:laneSet id="Supplier_Lanes">
+      <bpmn:lane id="Lane_Sales" name="Sales">
+        <bpmn:flowNodeRef>Supplier_OrderReceived</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Supplier_Review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Supplier_Confirm</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Supplier_End</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Warehouse" name="Warehouse">
+        <bpmn:flowNodeRef>Supplier_Reserve</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Supplier_OrderReceived" name="Order received">
+      <bpmn:messageEventDefinition id="EventDefinition_Order" />
+    </bpmn:startEvent>
+    <bpmn:userTask id="Supplier_Review" name="Review purchase order" />
+    <bpmn:userTask id="Supplier_Reserve" name="Reserve stock" />
+    <bpmn:sendTask id="Supplier_Confirm" name="Send confirmation" />
+    <bpmn:endEvent id="Supplier_End" name="Ready to fulfill" />
+    <bpmn:sequenceFlow id="Supplier_Flow1" sourceRef="Supplier_OrderReceived" targetRef="Supplier_Review" />
+    <bpmn:sequenceFlow id="Supplier_Flow2" sourceRef="Supplier_Review" targetRef="Supplier_Reserve" />
+    <bpmn:sequenceFlow id="Supplier_Flow3" sourceRef="Supplier_Reserve" targetRef="Supplier_Confirm" />
+    <bpmn:sequenceFlow id="Supplier_Flow4" sourceRef="Supplier_Confirm" targetRef="Supplier_End" />
+  </bpmn:process>
+</bpmn:definitions>
+

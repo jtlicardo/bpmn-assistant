@@ -1,0 +1,28 @@
+## Pools and lanes
+
+Pools and flat lanes are supported. Use lanes for roles/departments in one process;
+use separate pools for independent participants. Never connect sequence flows across
+pools. Message flows and nested lanes are not supported yet; explain that limitation
+when requested rather than inventing a connection.
+
+For a diagram with pools, the top-level "process" array contains ONLY pool objects.
+Each pool contains the existing structured process array; its order defines sequence
+flow within that pool. Pools themselves are NOT connected in sequence.
+
+Example:
+{"process": [{"type": "pool", "id": "company", "process_id": "company_process",
+"label": "Company", "lanes": [{"id": "sales", "label": "Sales"}, {"id": "warehouse", "label": "Warehouse"}],
+"process": [{"type": "startEvent", "id": "start", "lane_id": "sales"},
+{"type": "userTask", "id": "review", "label": "Review order", "lane_id": "sales"},
+{"type": "userTask", "id": "pack", "label": "Pack order", "lane_id": "warehouse"},
+{"type": "endEvent", "id": "end", "lane_id": "warehouse"}]}]}
+
+Each pool requires type, id, process_id, label and process. lanes is optional.
+An empty pool has an empty process array. Each non-empty pool has exactly one start
+and at least one end event. IDs must be unique throughout the whole diagram.
+When a pool has lanes, EVERY task, event and gateway (including inside branches)
+must have a lane_id belonging to that pool. Lane changes do not change sequence order.
+Gateways may have join_id and join_lane_id; preserve imported values. Otherwise the
+join uses "<gateway-id>-join" and the gateway's lane. Remove lane_id/join_lane_id
+when removing lanes. Preserve all unchanged pools, elements, IDs and assignments.
+Without pools, continue using the original plain process array.

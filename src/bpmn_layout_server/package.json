@@ -5,8 +5,11 @@
   "keywords": [],
   "author": "Josip Tomo Licardo",
   "license": "ISC",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
-    "bpmn-auto-layout": "^0.4.0",
+    "bpmn-auto-layout": "2.0.0-alpha.2",
     "express": "^4.21.2"
   }
 }

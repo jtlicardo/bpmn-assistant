@@ -2,7 +2,9 @@ import json
 import xml.etree.ElementTree as ET
 
 from bpmn_assistant.config import logger
-from bpmn_assistant.services import BpmnProcessTransformer
+from bpmn_assistant.services.bpmn_process_transformer import BpmnProcessTransformer
+from bpmn_assistant.services.pools import has_pools
+from bpmn_assistant.services.validate_bpmn import validate_pools
 
 
 class BpmnXmlGenerator:
@@ -21,6 +23,9 @@ class BpmnXmlGenerator:
             The BPMN XML string.
         """
 
+        if has_pools(process):
+            validate_pools(process)
+            return self._create_pools_xml(process)
         transformed_process = self.transformer.transform(process)
         logger.debug(
             f"Transformed process:\n{json.dumps(transformed_process, indent=2)}"
@@ -79,3 +84,31 @@ class BpmnXmlGenerator:
         xml_string = ET.tostring(root, encoding="unicode")
 
         return xml_string
+
+    def _create_pools_xml(self, pools: list[dict]) -> str:
+        namespace = 'http://www.omg.org/spec/BPMN/20100524/MODEL'
+        ET.register_namespace('', namespace)
+        def tag(name):
+            return f'{{{namespace}}}{name}'
+        root = ET.Element(tag('definitions'), {
+            'id': 'definitions_1', 'targetNamespace': 'https://bpmn-assistant.local/processes',
+        })
+        collaboration = ET.SubElement(root, tag('collaboration'), {'id': 'Collaboration_1'})
+        for pool in pools:
+            ET.SubElement(collaboration, tag('participant'), {
+                'id': pool['id'], 'name': pool['label'], 'processRef': pool['process_id'],
+            })
+            process_xml = ET.fromstring(self.create_bpmn_xml(pool['process']))
+            process_element = process_xml.find(tag('process'))
+            process_element.set('id', pool['process_id'])
+            if pool.get('lanes'):
+                lane_set = ET.Element(tag('laneSet'), {'id': f"{pool['process_id']}_lanes"})
+                nodes = self.transformer.transform(pool['process'])['elements']
+                for lane in pool['lanes']:
+                    lane_element = ET.SubElement(lane_set, tag('lane'), {'id': lane['id'], 'name': lane['label']})
+                    for node in nodes:
+                        if node.get('lane_id') == lane['id']:
+                            ET.SubElement(lane_element, tag('flowNodeRef')).text = node['id']
+                process_element.insert(0, lane_set)
+            root.append(process_element)
+        return ET.tostring(root, encoding='unicode')

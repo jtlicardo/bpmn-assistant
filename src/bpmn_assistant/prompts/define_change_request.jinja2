@@ -52,6 +52,12 @@
 
 ---
 
+{% include 'pools.jinja2' %}
+
+For existing pools or adding/removing pools or lanes, specify replace_process(process)
+with the entire updated diagram. Preserve unchanged content and IDs. The individual
+editing functions above apply only to plain processes without pools.
+
 # Current process
 
 {{ process }}

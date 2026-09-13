@@ -62,11 +62,12 @@ class BpmnProcessTransformer:
             # If the exclusive gateway has a 'join' gateway, add it to the elements list
             join_gateway_id = None
             if element.get("has_join", False):
-                join_gateway_id = f"{element['id']}-join"
+                join_gateway_id = element.get('join_id') or f"{element['id']}-join"
                 elements.append(
                     {
                         "id": join_gateway_id,
                         "type": "exclusiveGateway",
+                        **({'lane_id': element.get('join_lane_id') or element.get('lane_id')} if element.get('join_lane_id') or element.get('lane_id') else {}),
                         "label": None,
                     }
                 )
@@ -118,11 +119,12 @@ class BpmnProcessTransformer:
             join_gateway_id = None
             default_flow_id = None
             if element.get("has_join", False):
-                join_gateway_id = f"{element['id']}-join"
+                join_gateway_id = element.get('join_id') or f"{element['id']}-join"
                 elements.append(
                     {
                         "id": join_gateway_id,
                         "type": "inclusiveGateway",
+                        **({'lane_id': element.get('join_lane_id') or element.get('lane_id')} if element.get('join_lane_id') or element.get('lane_id') else {}),
                         "label": None,
                     }
                 )
@@ -186,11 +188,12 @@ class BpmnProcessTransformer:
 
         def handle_parallel_gateway(element: dict) -> str:
             # Create a 'join' parallel gateway element
-            join_gateway_id = f"{element['id']}-join"
+            join_gateway_id = element.get('join_id') or f"{element['id']}-join"
             elements.append(
                 {
                     "id": join_gateway_id,
                     "type": "parallelGateway",
+                    **({'lane_id': element.get('join_lane_id') or element.get('lane_id')} if element.get('join_lane_id') or element.get('lane_id') else {}),
                     "label": None,
                 }
             )
@@ -229,6 +232,8 @@ class BpmnProcessTransformer:
             }
 
             # Preserve eventDefinition if present
+            if element.get('lane_id'):
+                transformed_element['lane_id'] = element['lane_id']
             if "eventDefinition" in element:
                 transformed_element["eventDefinition"] = element["eventDefinition"]
 

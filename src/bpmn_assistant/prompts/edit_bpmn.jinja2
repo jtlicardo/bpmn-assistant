@@ -6,6 +6,13 @@
 
 # Process editing functions
 
+For ANY edit involving existing pools or adding/removing pools or lanes, use
+`replace_process(process)`: return the COMPLETE updated top-level process array.
+This applies to editing tasks inside pools too. Preserve unchanged pools, node IDs,
+lane assignments and gateway join IDs. The replacement is validated atomically.
+Example: {"function": "replace_process", "arguments": {"process": [/* all updated pools */]}}
+Use the functions below for diagrams without pools.
+
 - `delete_element(element_id)`
 - `redirect_branch(branch_condition, next_id)`
 - `add_element(element, before_id=None, after_id=None)`

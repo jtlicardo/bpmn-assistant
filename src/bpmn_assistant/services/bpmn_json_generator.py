@@ -3,6 +3,8 @@ from collections import deque
 from typing import Any, Callable, Optional
 
 from bpmn_assistant.core.enums import BPMNElementType
+from bpmn_assistant.services.bpmn_process_transformer import BpmnProcessTransformer
+from bpmn_assistant.services.validate_bpmn import validate_pools
 
 
 class BpmnJsonGenerator:
@@ -14,6 +16,8 @@ class BpmnJsonGenerator:
         self.elements: dict[str, dict[str, Any]] = {}
         self.flows: dict[str, dict[str, Any]] = {}
         self.process: list[dict[str, Any]] = []
+        self.preserve_pool_metadata = False
+        self.node_lanes: dict[str, str] = {}
 
     def _find_process_element(self, root: ET.Element) -> ET.Element:
         for elem in root.iter():
@@ -28,10 +32,17 @@ class BpmnJsonGenerator:
             - Supported elements: task, userTask, serviceTask, sendTask, receiveTask, businessRuleTask, manualTask, scriptTask, startEvent, endEvent, intermediateThrowEvent, intermediateCatchEvent, exclusiveGateway, inclusiveGateway, parallelGateway
             - Supported event definitions: timerEventDefinition, messageEventDefinition
             - The process must have only one start event
-            - The process must not contain pools or lanes
+            - Pools and flat lanes are supported; message flows and nested lanes are not
             - Parallel gateways must have a corresponding join gateway
         """
         root = ET.fromstring(bpmn_xml)
+        ns = {'b': 'http://www.omg.org/spec/BPMN/20100524/MODEL'}
+        if root.find('.//b:messageFlow', ns) is not None:
+            raise ValueError('Message flows are not supported yet. Import a diagram with pools and lanes only.')
+        participants = root.findall('./b:collaboration/b:participant', ns)
+        processes = root.findall('./b:process', ns)
+        if participants or root.find('.//b:lane', ns) is not None or len(processes) > 1:
+            return self._read_pools(participants, processes, ns)
         process_element = self._find_process_element(root)
         self._get_elements_and_flows(process_element)
         start_events = [
@@ -43,6 +54,66 @@ class BpmnJsonGenerator:
             raise ValueError("Process must contain exactly one start event")
         self._build_process_structure()
         return self.process
+
+    def _read_pools(self, participants, processes, ns):
+
+        by_id = {element.get('id'): element for element in processes}
+        referenced = {participant.get('processRef') for participant in participants}
+        if participants and any(identifier not in referenced for identifier in by_id):
+            raise ValueError('Every process must belong to a pool.')
+        if not participants:
+            participants = [ET.Element('participant', {
+                'id': f"{element.get('id')}_pool", 'name': element.get('name', ''),
+                'processRef': element.get('id'),
+            }) for element in processes]
+        pools = []
+        for participant in participants:
+            process_id = participant.get('processRef')
+            process_element = by_id.get(process_id)
+            if process_id and process_element is None:
+                raise ValueError(f'Pool references missing process: {process_id}')
+            pool = {
+                'type': 'pool', 'id': participant.get('id'), 'label': participant.get('name', ''),
+                'process_id': process_id or f"{participant.get('id')}_process",
+                'lanes': [], 'process': [],
+            }
+            if process_element is not None:
+                generator = BpmnJsonGenerator()
+                generator.preserve_pool_metadata = True
+                for lane in process_element.findall('./b:laneSet/b:lane', ns):
+                    if lane.find('b:childLaneSet', ns) is not None:
+                        raise ValueError('Nested lanes are not supported yet; use flat lanes.')
+                    pool['lanes'].append({'id': lane.get('id'), 'label': lane.get('name', '')})
+                    for reference in lane.findall('b:flowNodeRef', ns):
+                        node_id = (reference.text or '').strip()
+                        if node_id in generator.node_lanes:
+                            raise ValueError(f'Element belongs to multiple lanes: {node_id}')
+                        generator.node_lanes[node_id] = lane.get('id')
+                generator._get_elements_and_flows(process_element)
+                if any(reference not in generator.elements for reference in generator.node_lanes):
+                    raise ValueError('Lane refers to a missing or unsupported flow node.')
+                if generator.elements:
+                    starts = [node for node in generator.elements.values() if node['type'] == 'startEvent']
+                    if len(starts) != 1:
+                        raise ValueError('Each non-empty pool must contain exactly one start event.')
+                    generator._build_process_structure()
+                    pool['process'] = generator.process
+                # Do not silently drop unsupported nodes or disconnected process content.
+                emitted = {node['id'] for node in BpmnProcessTransformer().transform(pool['process'])['elements']}
+                if emitted != set(generator.elements):
+                    raise ValueError('The pool contains disconnected or unsupported process structure.')
+                allowed = {element.value for element in BPMNElementType} | {'sequenceFlow', 'laneSet', 'documentation'}
+                if any(child.tag.split('}')[-1] not in allowed for child in process_element):
+                    raise ValueError('The pool contains unsupported BPMN elements.')
+            pools.append(pool)
+        validate_pools(pools)
+        return pools
+
+    def _remember_join(self, gateway, join_id):
+        if self.preserve_pool_metadata:
+            gateway['join_id'] = join_id
+            if join_id in self.node_lanes:
+                gateway['join_lane_id'] = self.node_lanes[join_id]
 
     def _build_process_structure(self):
         start_event = next(
@@ -100,6 +171,7 @@ class BpmnJsonGenerator:
 
         if common_branch_endpoint and self._is_exclusive_gateway(common_branch_endpoint):
             gateway["has_join"] = True
+            self._remember_join(gateway, common_branch_endpoint)
             join_outgoing_flows = self._get_outgoing_flows(common_branch_endpoint)
             if len(join_outgoing_flows) != 1:
                 raise ValueError("Join gateway should have exactly one outgoing flow")
@@ -140,6 +212,7 @@ class BpmnJsonGenerator:
 
         if common_branch_endpoint and self._is_inclusive_gateway(common_branch_endpoint):
             gateway["has_join"] = True
+            self._remember_join(gateway, common_branch_endpoint)
             join_outgoing_flows = self._get_outgoing_flows(common_branch_endpoint)
             if len(join_outgoing_flows) != 1:
                 raise ValueError("Join gateway should have exactly one outgoing flow")
@@ -188,6 +261,8 @@ class BpmnJsonGenerator:
             or len(self._get_outgoing_flows(join_element)) != 1
         ):
             raise ValueError("Parallel gateway must have a corresponding join gateway")
+
+        self._remember_join(gateway, join_element)
 
         for flow in outgoing_flows:
             branch = self._build_structure_recursive(
@@ -493,6 +568,8 @@ class BpmnJsonGenerator:
                     "type": tag,
                     "id": elem_id,
                 }
+                if elem_id in self.node_lanes:
+                    self.elements[elem_id]['lane_id'] = self.node_lanes[elem_id]
                 if tag in labeled_elements:
                     name = elem.get("name")
                     if name:  # Only add label if name exists and is not empty

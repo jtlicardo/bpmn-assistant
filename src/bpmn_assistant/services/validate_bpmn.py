@@ -1,8 +1,9 @@
 from pydantic import ValidationError
 
 from bpmn_assistant.core.enums import BPMNElementType
-from bpmn_assistant.core.schemas import BPMNTask, ExclusiveGateway, InclusiveGateway, ParallelGateway
+from bpmn_assistant.core.schemas import BPMNPool, BPMNTask, ExclusiveGateway, InclusiveGateway, ParallelGateway
 from bpmn_assistant.services.bpmn_process_transformer import BpmnProcessTransformer
+from bpmn_assistant.services.pools import has_pools
 
 
 def validate_bpmn(process: list, is_top_level: bool = True) -> None:
@@ -14,6 +15,13 @@ def validate_bpmn(process: list, is_top_level: bool = True) -> None:
     Raises:
         ValueError: If the BPMN process, or any of its elements, is invalid.
     """
+    if not isinstance(process, list):
+        raise ValueError('Process must be an array.')
+    if has_pools(process):
+        if not is_top_level or any(element.get('type') != 'pool' for element in process):
+            raise ValueError('Use either top-level pools or a plain process; do not mix them.')
+        validate_pools(process)
+        return
     seen_ids = set()
     start_event_count = 0
 
@@ -176,3 +184,44 @@ def _process_has_end_event(process: list[dict]) -> bool:
                 if _process_has_end_event(branch):
                     return True
     return False
+
+
+def validate_pools(pools: list) -> None:
+    """Validate pool contents, lane assignments, and diagram-wide IDs."""
+    seen = {'definitions_1', 'Collaboration_1'}
+
+    def reserve(identifier):
+        if not isinstance(identifier, str) or not identifier or identifier in seen:
+            raise ValueError(f'Duplicate or invalid BPMN ID: {identifier}')
+        seen.add(identifier)
+
+    for pool in pools:
+        BPMNPool.model_validate(pool)
+        reserve(pool['id'])
+        reserve(pool['process_id'])
+        lanes = pool.get('lanes', [])
+        lane_ids = {lane['id'] for lane in lanes}
+        if lanes:
+            reserve(f"{pool['process_id']}_lanes")
+        for lane in lanes:
+            reserve(lane['id'])
+        contents = pool['process']
+        if has_pools(contents):
+            raise ValueError('Pools must be top-level containers, not nested inside another pool.')
+        if contents:
+            validate_bpmn(contents)
+        transformed = BpmnProcessTransformer().transform(contents)
+        node_ids = {node['id'] for node in transformed['elements']}
+        for node in transformed['elements']:
+            reserve(node['id'])
+            lane_id = node.get('lane_id')
+            if lane_id is not None and lane_id not in lane_ids:
+                raise ValueError(f"Element {node['id']} refers to an unknown lane: {lane_id}")
+            if lanes and lane_id is None:
+                raise ValueError(f"Assign element {node['id']} to a lane in pool {pool['id']}.")
+            if node.get('eventDefinition'):
+                reserve(f"{node['eventDefinition']}_{node['id']}")
+        for flow in transformed['flows']:
+            reserve(flow['id'])
+            if flow['sourceRef'] not in node_ids or flow['targetRef'] not in node_ids:
+                raise ValueError('Sequence flows must stay within their pool; message flows are not supported yet.')

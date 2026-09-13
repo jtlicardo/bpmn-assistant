@@ -50,7 +50,9 @@ let bpmnXml = `
 
 async function layoutBpmnXml(bpmnXml) {
     try {
-        return await layoutProcess(bpmnXml);
+        const { xml, warnings } = await layoutProcess(bpmnXml);
+        if (warnings.length) console.warn(warnings);
+        return xml;
     } catch (error) {
         console.error('Error processing BPMN XML:', error);
         return null;

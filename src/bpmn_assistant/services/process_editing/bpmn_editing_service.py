@@ -1,7 +1,10 @@
+from copy import deepcopy
+
 from bpmn_assistant.config import logger
 from bpmn_assistant.core import EditProposal, IntermediateEditProposal, LLMFacade
 from bpmn_assistant.core.exceptions import ProcessException
 from bpmn_assistant.prompts import PromptTemplateProcessor
+from bpmn_assistant.services.pools import has_pools
 from bpmn_assistant.services.process_editing import (
     add_element,
     delete_element,
@@ -158,6 +161,12 @@ class BpmnEditingService:
         Raises:
             ProcessException: If the edit proposal is invalid
         """
+        if edit_proposal['function'] == 'replace_process':
+            replacement = deepcopy(edit_proposal['arguments']['process'])
+            validate_bpmn(replacement)
+            return replacement
+        if has_pools(process):
+            raise ValueError('Use replace_process to edit pools and their contents together, preserving unchanged IDs and lane assignments.')
         edit_functions = {
             "delete_element": delete_element,
             "redirect_branch": redirect_branch,
@@ -199,7 +208,11 @@ class BpmnEditingService:
         function_to_call = edit_proposal["function"]
         args = edit_proposal["arguments"]
 
-        if function_to_call == "delete_element":
+        if function_to_call == 'replace_process':
+            if set(args) != {'process'}:
+                raise ValueError('replace_process requires only the complete process array.')
+            validate_bpmn(args['process'])
+        elif function_to_call == "delete_element":
             self._validate_delete_element(args)
         elif function_to_call == "redirect_branch":
             self._validate_redirect_branch(args)
