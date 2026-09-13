@@ -11,8 +11,6 @@ Describe a business process. Get a BPMN diagram.
 
 ![Pools and lanes](assets/pools_lanes.png)
 
-https://github.com/user-attachments/assets/2f17bd99-f6fb-47a2-b33e-2190c3a834e2
-
 ## Quickstart
 
 ### Option 1: Use the hosted version
@@ -97,11 +95,11 @@ Additional prerequisites for local deployment:
 
 ## Core features
 
-**Create** — Generate BPMN diagrams from plain-language descriptions, including pools and lanes.
+**Create** - Generate BPMN diagrams from plain-language descriptions, including pools and lanes.
 
-**Edit** — Modify processes conversationally or import BPMN files with drag and drop.
+**Edit** - Modify processes conversationally or import BPMN files with drag and drop.
 
-**Understand** — Ask questions about existing diagrams or use images to create and modify processes.
+**Understand** - Ask questions about existing diagrams or use images to create and modify processes.
 
 ## Supported elements
 
