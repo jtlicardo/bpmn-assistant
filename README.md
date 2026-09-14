@@ -14,7 +14,7 @@ Describe a business process in plain language, refine it through conversation, a
 
 Bring an OpenAI or Anthropic API key to get started.
 
-![Purchase order process with message flows, a multi-instance task, and a text annotation](assets/app_screenshot.png)
+![Support request process with Customer and Support Team pools connected by one message flow](assets/app_screenshot.png)
 
 ## From an idea to a process you can edit
 
@@ -26,6 +26,10 @@ Bring an OpenAI or Anthropic API key to get started.
 - **Run it your way.** Use the hosted app or run locally with Docker and your own API keys.
 
 Useful for analysts drafting workflows, teams discussing process changes, and students learning BPMN.
+
+A more detailed process with pools, lanes, and message flows:
+
+![Purchase order process with message flows, a multi-instance task, and a text annotation](assets/purchase_order_screenshot.png)
 
 ## Try a process
 
