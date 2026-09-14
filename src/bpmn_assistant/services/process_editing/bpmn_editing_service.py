@@ -5,6 +5,7 @@ from bpmn_assistant.core import EditProposal, IntermediateEditProposal, LLMFacad
 from bpmn_assistant.core.exceptions import ProcessException
 from bpmn_assistant.prompts import PromptTemplateProcessor
 from bpmn_assistant.services.pools import has_pools
+from bpmn_assistant.services.activity_support import has_activities
 from bpmn_assistant.services.process_editing import (
     add_element,
     delete_element,
@@ -165,8 +166,8 @@ class BpmnEditingService:
             replacement = deepcopy(edit_proposal['arguments']['process'])
             validate_bpmn(replacement)
             return replacement
-        if has_pools(process):
-            raise ValueError('Use replace_process to edit pools and their contents together, preserving unchanged IDs and lane assignments.')
+        if has_pools(process) or has_activities(process):
+            raise ValueError('Use replace_process to edit pools, subprocesses, or boundary handlers atomically, preserving unchanged IDs and lane assignments.')
         edit_functions = {
             "delete_element": delete_element,
             "redirect_branch": redirect_branch,

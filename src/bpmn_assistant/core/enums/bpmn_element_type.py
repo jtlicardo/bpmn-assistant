@@ -2,6 +2,8 @@ from enum import Enum
 
 
 class BPMNElementType(Enum):
+    SUB_PROCESS = "subProcess"
+    BOUNDARY_EVENT = "boundaryEvent"
     TASK = "task"
     USER_TASK = "userTask"
     SERVICE_TASK = "serviceTask"

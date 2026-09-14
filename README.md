@@ -125,6 +125,15 @@ The application currently supports a subset of BPMN elements, including pools, l
 
 Tasks also support loop and sequential/parallel multi-instance markers.
 
+### Embedded subprocesses
+
+Nested embedded subprocesses with expanded or collapsed display.
+
+### Boundary events
+
+* Timer events: interrupting or non-interrupting, with duration, date, or cycle expressions
+* Error events: interrupting, attached to tasks or subprocesses
+
 ### Gateways
 * Exclusive gateway
 * Parallel gateway

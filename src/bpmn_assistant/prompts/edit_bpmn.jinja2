@@ -6,7 +6,7 @@
 
 # Process editing functions
 
-For ANY edit involving pools, lanes, message flows, annotations, event details, or loop markers, use
+For ANY edit involving pools, lanes, message flows, annotations, event details, loop markers, subprocesses, or boundary handlers, use
 `replace_process(process)`: return the COMPLETE updated top-level process array.
 This applies to editing tasks inside pools too. Preserve unchanged pools, node IDs,
 lane assignments and gateway join IDs. The replacement is validated atomically.

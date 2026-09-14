@@ -59,6 +59,38 @@ class BPMNTask(BaseModel):
     label: str
     lane_id: Optional[str] = None
     loop: Optional[Union[StandardLoop, MultiInstanceLoop]] = None
+    boundary_events: List["BoundaryEvent"] = Field(default_factory=list)
+
+
+class TimerDefinition(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    type: Literal['duration', 'date', 'cycle']
+    value: str = Field(min_length=1)
+
+
+class BoundaryEvent(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    type: Literal['boundaryEvent']
+    id: str = Field(min_length=1)
+    label: Optional[str] = None
+    eventDefinition: Literal['timerEventDefinition', 'errorEventDefinition']
+    cancel_activity: bool = Field(default=True, strict=True)
+    timer: Optional[TimerDefinition] = None
+    event_reference: Optional[EventReference] = None
+    lane_id: Optional[str] = None
+    path: List["BPMNElement"] = Field(default_factory=list)
+    next: Optional[str] = None
+
+
+class SubProcess(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    type: Literal['subProcess']
+    id: str = Field(min_length=1)
+    label: str
+    lane_id: Optional[str] = None
+    process: List["BPMNProcessItem"]
+    expanded: bool = Field(default=True, strict=True)
+    boundary_events: List[BoundaryEvent] = Field(default_factory=list)
 
 
 EventType = Literal["startEvent", "endEvent", "intermediateThrowEvent", "intermediateCatchEvent"]
@@ -86,6 +118,7 @@ class BPMNEvent(BaseModel):
     link_name: Optional[str] = None
     activity_ref: Optional[str] = None
     wait_for_completion: Optional[bool] = Field(default=None, strict=True)
+    timer: Optional[TimerDefinition] = None
 
 
 class ExclusiveGatewayBranch(BaseModel):
@@ -166,7 +199,7 @@ class ParallelGateway(BaseModel):
     join_lane_id: Optional[str] = None
 
 
-BPMNElement = Union[BPMNTask, BPMNEvent, ExclusiveGateway, InclusiveGateway, ParallelGateway]
+BPMNElement = Union[BPMNTask, BPMNEvent, ExclusiveGateway, InclusiveGateway, ParallelGateway, SubProcess]
 
 
 class TextAnnotation(BaseModel):

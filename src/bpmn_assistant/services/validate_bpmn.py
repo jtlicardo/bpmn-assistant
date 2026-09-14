@@ -4,6 +4,7 @@ from bpmn_assistant.core.enums import BPMNElementType
 from bpmn_assistant.core.schemas import (
     Association, BPMNEvent, BPMNPool, BPMNTask, ExclusiveGateway,
     InclusiveGateway, ParallelGateway, TextAnnotation,
+    SubProcess, BoundaryEvent, TimerDefinition,
 )
 from bpmn_assistant.services.element_details import ARTIFACT_TYPES, DETAIL_FIELDS, REFERENCE_TYPES, is_link
 from bpmn_assistant.services.bpmn_process_transformer import BpmnProcessTransformer
@@ -30,6 +31,8 @@ def validate_bpmn(process: list, is_top_level: bool = True) -> None:
     start_event_count = 0
 
     for element in process:
+        if element.get('type') == 'boundaryEvent':
+            raise ValueError('Place boundary events in the attached activity boundary_events array.')
         if element.get('type') in ARTIFACT_TYPES and not is_top_level:
             raise ValueError('Place annotations and associations at the process level, outside branches.')
         validate_element(element)
@@ -62,6 +65,8 @@ def validate_bpmn(process: list, is_top_level: bool = True) -> None:
         transformer = BpmnProcessTransformer()
         transformer.transform(process)
         validate_details(process)
+        from bpmn_assistant.services.activity_support import validate_scope_tree
+        validate_scope_tree(process)
 
 
 def validate_element(element: dict) -> None:
@@ -84,7 +89,24 @@ def validate_element(element: dict) -> None:
             f"Unsupported element type: {element['type']}. Supported types: {supported_elements}"
         )
 
-    if element['type'] == 'textAnnotation':
+    if element.get('boundary_events') and element['type'] != 'subProcess' and not element['type'].lower().endswith('task'):
+        raise ValueError('Boundary events may only attach to tasks or embedded subprocesses.')
+    for boundary in element.get('boundary_events', []):
+        BoundaryEvent.model_validate(boundary)
+        if boundary['eventDefinition'] == 'errorEventDefinition' and not boundary.get('cancel_activity', True):
+            raise ValueError('Error boundary events must interrupt their activity.')
+        if boundary['eventDefinition'] == 'timerEventDefinition' and not boundary.get('timer'):
+            raise ValueError('Timer boundary events require a timer date, duration, or cycle.')
+        _validate_timer(boundary)
+        if boundary.get('event_reference') and boundary['eventDefinition'] != 'errorEventDefinition':
+            raise ValueError('Only error boundary events support event_reference.')
+        validate_bpmn(boundary.get('path', []), is_top_level=False)
+    if element['type'] == 'subProcess':
+        SubProcess.model_validate(element)
+        validate_bpmn(element['process'])
+        if any(node.get('eventDefinition') for node in element['process'] if node['type'] == 'startEvent'):
+            raise ValueError('Ordinary embedded subprocesses require a none start event.')
+    elif element['type'] == 'textAnnotation':
         TextAnnotation.model_validate(element)
     elif element['type'] == 'association':
         Association.model_validate(element)
@@ -121,6 +143,7 @@ def validate_element(element: dict) -> None:
 
 
 def _validate_event(element):
+    _validate_timer(element)
     allowed = {
         'startEvent': {'timer', 'message', 'signal', 'conditional'},
         'endEvent': {'message', 'signal', 'error', 'escalation', 'terminate', 'compensate'},
@@ -146,6 +169,15 @@ def _validate_event(element):
         'errorEventDefinition', 'escalationEventDefinition',
     ):
         raise ValueError('Only error and escalation references support a code.')
+
+
+def _validate_timer(element):
+    if element.get('timer') is not None:
+        TimerDefinition.model_validate(element['timer'])
+        if element.get('eventDefinition') != 'timerEventDefinition':
+            raise ValueError('Timer configuration requires a timer event definition.')
+        if not element['timer']['value'].strip():
+            raise ValueError('Timer expression must not be blank.')
 
 
 def validate_details(process):
@@ -337,6 +369,21 @@ def validate_pools(pools: list) -> None:
             reserve(flow['id'])
             if flow['sourceRef'] not in node_ids or flow['targetRef'] not in node_ids:
                 raise ValueError('Sequence flows must stay within their pool; use message flows between pools.')
+        from bpmn_assistant.services.activity_support import scopes
+        for nested, graph in list(scopes(contents))[1:]:
+            all_nodes.extend(graph['elements'])
+            for node in graph['elements']:
+                reserve(node['id'])
+                endpoints[node['id']] = (pool['id'], node['type'], node.get('eventDefinition'))
+                if node.get('lane_id') is not None:
+                    raise ValueError('Assign the subprocess to a lane; internal lanes are not supported yet.')
+                if node.get('eventDefinition'):
+                    reserve(f"{node['eventDefinition']}_{node['id']}")
+            for flow in graph['flows']:
+                reserve(flow['id'])
+            for artifact in nested:
+                if artifact['type'] in ARTIFACT_TYPES:
+                    reserve(artifact['id'])
 
     for identifier in event_references(all_nodes):
         reserve(identifier)
@@ -360,5 +407,5 @@ def validate_pools(pools: list) -> None:
                 if endpoint[2] not in (None, 'messageEventDefinition'):
                     raise ValueError('Message flows cannot connect to non-message event definitions.')
                 allowed_events = {'endEvent', 'intermediateThrowEvent'} if sending else {'startEvent', 'intermediateCatchEvent'}
-                if kind != 'pool' and not kind.lower().endswith('task') and kind not in allowed_events:
+                if kind not in ('pool', 'subProcess') and not kind.lower().endswith('task') and kind not in allowed_events:
                     raise ValueError('Message flows must connect pools, tasks, or events with the correct sending/receiving direction.')

@@ -215,9 +215,6 @@ class BpmnProcessTransformer:
                 first_element = branch_structure["elements"][0]
                 add_flow(element["id"], first_element["id"])
 
-                # Add the flow from the last element in the branch to the join gateway
-                last_element = branch_structure["elements"][-1]
-                add_flow(last_element["id"], join_gateway_id)
 
             return join_gateway_id
 
@@ -242,6 +239,9 @@ class BpmnProcessTransformer:
             for field in DETAIL_FIELDS:
                 if element.get(field) is not None:
                     transformed_element[field] = element[field]
+            if element['type'] == 'subProcess':
+                transformed_element['process'] = element['process']
+                transformed_element['expanded'] = element.get('expanded', True)
 
             elements.append(transformed_element)
 
@@ -266,6 +266,23 @@ class BpmnProcessTransformer:
             elif next_element_id and element["type"] != "endEvent":
                 # Add the flow between the current element and the next element in the process
                 add_flow(element["id"], next_element_id)
+
+        # Handlers live beside their host in the same BPMN scope, never in its
+        # normal sequence. Their exits are explicit (an end event or `next`).
+        for host in process:
+            for boundary in host.get('boundary_events', []):
+                event = {key: value for key, value in boundary.items() if key not in ('path', 'next')}
+                event.update(label=boundary.get('label'), attached_to=host['id'],
+                             cancel_activity=boundary.get('cancel_activity', True))
+                if host.get('lane_id') and not event.get('lane_id'):
+                    event['lane_id'] = host['lane_id']
+                elements.append(event)
+                handler = self.transform(boundary.get('path', []), boundary.get('next'))
+                elements.extend(handler['elements'])
+                flows.extend(handler['flows'])
+                target = handler['elements'][0]['id'] if handler['elements'] else boundary.get('next')
+                if target:
+                    add_flow(event['id'], target)
 
         # Link events jump by name; they do not have a connecting sequence flow.
         link_throws = {node['id'] for node in elements if is_link(node, 'intermediateThrowEvent')}

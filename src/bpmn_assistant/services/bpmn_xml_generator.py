@@ -29,6 +29,7 @@ class BpmnXmlGenerator:
             return self._create_pools_xml(process)
         if process:
             validate_bpmn(process)
+        self._subprocess_expansion = {}
         transformed_process = self.transformer.transform(process)
         logger.debug(
             f"Transformed process:\n{json.dumps(transformed_process, indent=2)}"
@@ -47,6 +48,13 @@ class BpmnXmlGenerator:
         process_element.set("id", "Process_1")
         process_element.set("isExecutable", "false")
 
+        self._write_scope(process_element, process, root)
+        self._write_subprocess_di(root)
+        return ET.tostring(root, encoding="unicode")
+
+    def _write_scope(self, process_element, process, root):
+        transformed_process = self.transformer.transform(process)
+
         # Add elements
         for element in transformed_process["elements"]:
             elem = ET.SubElement(process_element, element["type"])
@@ -55,6 +63,9 @@ class BpmnXmlGenerator:
             # Add label if it exists
             if element["label"]:
                 elem.set("name", element["label"])
+            if element['type'] == 'boundaryEvent':
+                elem.set('attachedToRef', element['attached_to'])
+                elem.set('cancelActivity', str(element['cancel_activity']).lower())
 
             # Add default flow attribute for inclusive/exclusive gateways if it exists
             if "default_flow" in element and element["default_flow"]:
@@ -75,6 +86,9 @@ class BpmnXmlGenerator:
                 write_event_details(event_def_elem, element, root)
             if element.get('loop'):
                 write_loop(elem, element['loop'])
+            if element['type'] == 'subProcess':
+                self._subprocess_expansion[element['id']] = element['expanded']
+                self._write_scope(elem, element['process'], root)
 
         # Add flows
         for flow in transformed_process["flows"]:
@@ -88,9 +102,31 @@ class BpmnXmlGenerator:
                 seq_flow.set("name", flow["condition"])
 
         write_artifacts(process_element, process)
-        xml_string = ET.tostring(root, encoding="unicode")
 
-        return xml_string
+    def _write_subprocess_di(self, root, plane_id='Process_1'):
+        # DI carries expanded/collapsed presentation. The layout service replaces
+        # these seed bounds while preserving expansion and subprocess contents.
+        subprocesses = getattr(self, '_subprocess_expansion', {})
+        if not subprocesses:
+            return
+        di = '{http://www.omg.org/spec/BPMN/20100524/DI}'
+        dc = '{http://www.omg.org/spec/DD/20100524/DC}'
+        used_ids = {element.get('id') for element in root.iter()}
+
+        def unique_id(base):
+            candidate = base
+            while candidate in used_ids:
+                candidate += '_di'
+            used_ids.add(candidate)
+            return candidate
+
+        diagram = ET.SubElement(root, di + 'BPMNDiagram', {'id': unique_id('ActivityDiagram')})
+        plane = ET.SubElement(diagram, di + 'BPMNPlane', {'id': unique_id('ActivityPlane'), 'bpmnElement': plane_id})
+        for identifier, expanded in subprocesses.items():
+            shape = ET.SubElement(plane, di + 'BPMNShape', {
+                'id': unique_id(f'{identifier}_di'), 'bpmnElement': identifier, 'isExpanded': str(expanded).lower(),
+            })
+            ET.SubElement(shape, dc + 'Bounds', {'x': '0', 'y': '0', 'width': '350', 'height': '200'})
 
     def _create_pools_xml(self, pools: list[dict]) -> str:
         artifacts = [item for item in pools if item['type'] in ARTIFACT_TYPES]
@@ -103,11 +139,13 @@ class BpmnXmlGenerator:
             'id': 'definitions_1', 'targetNamespace': 'https://bpmn-assistant.local/processes',
         })
         collaboration = ET.SubElement(root, tag('collaboration'), {'id': 'Collaboration_1'})
+        expansions = {}
         for pool in pools:
             ET.SubElement(collaboration, tag('participant'), {
                 'id': pool['id'], 'name': pool['label'], 'processRef': pool['process_id'],
             })
             process_xml = ET.fromstring(self.create_bpmn_xml(pool['process']))
+            expansions.update(self._subprocess_expansion)
             process_element = process_xml.find(tag('process'))
             process_element.set('id', pool['process_id'])
             if pool.get('lanes'):
@@ -121,7 +159,7 @@ class BpmnXmlGenerator:
                 process_element.insert(0, lane_set)
             root.append(process_element)
             for definition in process_xml:
-                if definition.tag != tag('process') and not any(
+                if definition.tag.split('}')[-1] not in ('process', 'BPMNDiagram') and not any(
                     child.get('id') == definition.get('id') for child in root
                 ):
                     root.append(definition)
@@ -135,4 +173,6 @@ class BpmnXmlGenerator:
                     attributes['name'] = flow['label']
                 ET.SubElement(collaboration, tag('messageFlow'), attributes)
         write_artifacts(collaboration, artifacts)
+        self._subprocess_expansion = expansions
+        self._write_subprocess_di(root, 'Collaboration_1')
         return ET.tostring(root, encoding='unicode')

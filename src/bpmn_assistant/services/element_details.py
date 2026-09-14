@@ -11,7 +11,7 @@ REFERENCE_TYPES = {
     'messageEventDefinition': ('message', 'messageRef', None),
 }
 DETAIL_FIELDS = ('loop', 'event_reference', 'condition', 'link_name',
-                 'activity_ref', 'wait_for_completion')
+                 'activity_ref', 'wait_for_completion', 'timer')
 
 
 def is_link(node, kind):
@@ -19,6 +19,10 @@ def is_link(node, kind):
 
 
 def write_event_details(definition, node, root):
+    if node.get('timer'):
+        timer = node['timer']
+        tag = {'duration': 'timeDuration', 'date': 'timeDate', 'cycle': 'timeCycle'}[timer['type']]
+        ET.SubElement(definition, tag).text = timer['value']
     reference = node.get('event_reference')
     if reference:
         kind, attribute, code = REFERENCE_TYPES[node['eventDefinition']]
@@ -94,6 +98,15 @@ def read_details(element, node, root):
         definition = definitions[0]
         kind = definition.tag.split('}')[-1]
         node['eventDefinition'] = kind
+        timers = [child for child in definition if child.tag.split('}')[-1] in
+                  ('timeDuration', 'timeDate', 'timeCycle')]
+        if len(timers) > 1:
+            raise ValueError('A timer must have exactly one date, duration, or cycle.')
+        if timers:
+            timer = timers[0]
+            node['timer'] = {'type': {'timeDuration': 'duration', 'timeDate': 'date',
+                                    'timeCycle': 'cycle'}[timer.tag.split('}')[-1]],
+                             'value': timer.text or ''}
         if kind in REFERENCE_TYPES:
             reference_kind, attribute, code = REFERENCE_TYPES[kind]
             reference_id = definition.get(attribute)

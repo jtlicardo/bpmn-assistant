@@ -31,7 +31,7 @@ class BpmnJsonGenerator:
         """
         Create the JSON representation of the process from the BPMN XML
         Constraints:
-            - Supported elements: task, userTask, serviceTask, sendTask, receiveTask, businessRuleTask, manualTask, scriptTask, startEvent, endEvent, intermediateThrowEvent, intermediateCatchEvent, exclusiveGateway, inclusiveGateway, parallelGateway
+            - Tasks, embedded subprocesses, timer/error boundary handlers, events, and exclusive/inclusive/parallel gateways
             - Supported event definitions are validated against each event's position
             - The process must have only one start event
             - Pools, flat lanes, and message flows are supported; nested lanes are not
@@ -123,8 +123,10 @@ class BpmnJsonGenerator:
         source_pools = {}
         for pool in pools:
             source_pools[pool['id']] = pool
-            for node in BpmnProcessTransformer().transform(pool['process'])['elements']:
-                source_pools[node['id']] = pool
+            from bpmn_assistant.services.activity_support import scopes
+            for _, graph in scopes(pool['process']):
+                for node in graph['elements']:
+                    source_pools[node['id']] = pool
         for flow in message_flows:
             pool = source_pools.get(flow.get('sourceRef'))
             if pool is None:
@@ -154,6 +156,66 @@ class BpmnJsonGenerator:
 
         # Start building the process structure recursively from the start event
         self.process = self._build_structure_recursive(start_event["id"])
+        self._attach_boundary_paths()
+        if any(node['type'] in ('subProcess', 'boundaryEvent') for node in self.elements.values()):
+            graph = BpmnProcessTransformer().transform(self.process)
+            actual = {(flow['sourceRef'], flow['targetRef']) for flow in graph['flows']}
+            expected = {(flow['source'], flow['target']) for flow in self.flows.values()}
+            if {node['id'] for node in graph['elements']} != set(self.elements) or actual != expected:
+                raise ValueError('Unsupported activity structure: import would change or drop nodes or connections.')
+
+    def _attach_boundary_paths(self):
+        main_ids = {node['id'] for node in BpmnProcessTransformer().transform(self.process)['elements']}
+        for node in self.elements.values():
+            if node['type'] != 'boundaryEvent':
+                continue
+            host = self.elements.get(node.get('attached_to'))
+            if not host or (host['type'] != 'subProcess' and not host['type'].lower().endswith('task')):
+                raise ValueError('Boundary event must attach to a task or subprocess in the same scope.')
+            outgoing = self._get_outgoing_flows(node['id'])
+            if len(outgoing) != 1 or any(flow['target'] == node['id'] for flow in self.flows.values()):
+                raise ValueError('Boundary events require no incoming and exactly one outgoing flow.')
+            target = outgoing[0]['target']
+            pending, visited, rejoins = [target], set(), set()
+            while pending:
+                current = pending.pop()
+                if current in main_ids:
+                    rejoins.add(current)
+                    continue
+                if current in visited:
+                    continue
+                visited.add(current)
+                pending.extend(flow['target'] for flow in self._get_outgoing_flows(current))
+            if len(rejoins) > 1:
+                raise ValueError('A boundary handler can currently rejoin the normal path at only one element.')
+            next_id = next(iter(rejoins), None)
+            boundary = {key: value for key, value in node.items() if key != 'attached_to'}
+            boundary['path'] = self._build_structure_recursive(target, stop_at=next_id)
+            if next_id:
+                boundary['next'] = next_id
+            host.setdefault('boundary_events', []).append(boundary)
+
+    def _read_subprocess(self, element):
+        if element.get('triggeredByEvent') in ('true', '1'):
+            raise ValueError('Event subprocesses are not supported; use an ordinary embedded subprocess.')
+        allowed = {kind.value for kind in BPMNElementType} | ARTIFACT_TYPES | {'sequenceFlow', 'documentation', 'incoming', 'outgoing'}
+        if any(child.tag.split('}')[-1] not in allowed for child in element):
+            raise ValueError('Unsupported embedded subprocess content (including nested lanes or loop markers).')
+        generator = BpmnJsonGenerator()
+        generator.root = self.root
+        generator.preserve_pool_metadata = True
+        generator._get_elements_and_flows(element)
+        if sum(node['type'] == 'startEvent' for node in generator.elements.values()) != 1:
+            raise ValueError('Embedded subprocesses require exactly one start event.')
+        generator._build_process_structure()
+        generator.process.extend(read_artifacts(element))
+        graph = BpmnProcessTransformer().transform(generator.process)
+        if {node['id'] for node in graph['elements']} != set(generator.elements) or {
+            (flow['sourceRef'], flow['targetRef']) for flow in graph['flows']
+        } != {(flow['source'], flow['target']) for flow in generator.flows.values()}:
+            raise ValueError('Unsupported subprocess structure: import would change nodes or connections.')
+        validate_bpmn(generator.process)
+        return generator.process
 
     def _build_structure_recursive(
         self,
@@ -581,7 +643,10 @@ class BpmnJsonGenerator:
         return handlers.get(element_type)
 
     def _get_elements_and_flows(self, process: ET.Element):
+        if any(child.tag.split('}')[-1] in ('subProcess', 'boundaryEvent') for child in process):
+            self.preserve_pool_metadata = True
         labeled_elements = {
+            'subProcess', 'boundaryEvent',
             BPMNElementType.TASK.value,
             BPMNElementType.USER_TASK.value,
             BPMNElementType.SERVICE_TASK.value,
@@ -621,6 +686,15 @@ class BpmnJsonGenerator:
                         self.elements[elem_id]["default_flow"] = default_flow
 
                 read_details(elem, self.elements[elem_id], self.root)
+                if tag == 'subProcess':
+                    self.elements[elem_id]['label'] = elem.get('name', '')
+                    self.elements[elem_id]['process'] = self._read_subprocess(elem)
+                    shape = next((shape for shape in self.root.iter()
+                                  if shape.tag.endswith('BPMNShape') and shape.get('bpmnElement') == elem_id), None)
+                    self.elements[elem_id]['expanded'] = shape.get('isExpanded', 'false') in ('true', '1') if shape is not None else True
+                elif tag == 'boundaryEvent':
+                    self.elements[elem_id]['attached_to'] = elem.get('attachedToRef')
+                    self.elements[elem_id]['cancel_activity'] = elem.get('cancelActivity', 'true') in ('true', '1')
             elif tag == "sequenceFlow":
                 self.flows[elem_id] = {
                     "id": elem_id,
@@ -631,5 +705,7 @@ class BpmnJsonGenerator:
         for flow in self.flows.values():
             source = self.elements.get(flow['source'])
             target = self.elements.get(flow['target'])
+            if source is None or target is None:
+                raise ValueError('Sequence flow refers to a missing element or crosses a subprocess scope.')
             if source and is_link(source, 'intermediateThrowEvent') or target and is_link(target, 'intermediateCatchEvent'):
                 raise ValueError('Link throw events cannot have outgoing sequence flows; link catches cannot have incoming sequence flows.')

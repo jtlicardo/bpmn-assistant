@@ -1,0 +1,51 @@
+## Embedded subprocesses and boundary handlers
+
+Use an ordinary embedded subprocess to group an activity's internal workflow:
+{"type":"subProcess","id":"review","label":"Review application","expanded":true,
+ "process":[{"type":"startEvent","id":"review_start"},
+            {"type":"userTask","id":"verify","label":"Verify documents"},
+            {"type":"endEvent","id":"review_end"}]}
+
+The `process` array is a separate scope with exactly one NONE start event and at
+least one end event. Subprocesses can contain gateways, tasks, annotations, further
+embedded subprocesses, and boundary handlers. IDs must be unique across the entire
+diagram. Flows and branch `next` references must stay inside their scope. Set
+`expanded` false to display a collapsed subprocess while preserving its contents.
+Assign the subprocess itself to a pool lane; do not assign its internal nodes to
+parent lanes. Call activities, event subprocesses, transactions, subprocess loop
+markers, and internal lane sets are not supported yet.
+
+Tasks and subprocesses may have a `boundary_events` array. The host is implicit:
+never insert a boundary event into the normal process sequence and never put its
+handler inside the subprocess's `process` unless it attaches to an internal task.
+
+Example: add this field to an approval task for a non-interrupting reminder:
+"boundary_events":[{
+  "type":"boundaryEvent","id":"approval_timeout","label":"48 hours",
+  "eventDefinition":"timerEventDefinition","cancel_activity":false,
+  "timer":{"type":"duration","value":"PT48H"},
+  "path":[{"type":"sendTask","id":"remind","label":"Send reminder"},
+          {"type":"endEvent","id":"reminder_end"}]
+}]
+
+Use `cancel_activity`: true (default) to interrupt the host and follow the exception
+path, or false for a timer reminder that runs alongside the continuing activity.
+Error boundary events use `eventDefinition`: "errorEventDefinition" and MUST
+interrupt (`cancel_activity`: true). They may carry `event_reference` with an id,
+optional name and code matching an error end event inside the subprocess. Omit the
+reference for a catch-all error handler. Error handlers must not carry `timer`.
+
+Each boundary `path` contains normal elements, without a start event. Finish with
+an end event or set boundary `next` to an existing node in the SAME scope to rejoin
+the main path. An empty `path` requires `next`. Do not implicitly continue the host's
+normal sequence after the handler. A boundary inherits its host's lane; assign
+handler activities/events to appropriate lanes when the enclosing pool uses lanes.
+
+Timer boundary events require `timer`: {"type":"duration"|"date"|"cycle","value":"..."}.
+Use ISO 8601 values such as PT48H, 2026-12-01T09:00:00Z, or R3/PT24H, or preserve
+an existing expression. The same timer field is available on timer start/catch
+events. Never replace an existing timer expression with a label alone.
+
+For ANY edit to a diagram containing subprocesses or boundary handlers (including
+adding the first one), use `replace_process` with the complete updated process.
+Preserve unchanged IDs, subprocess contents, timers, handlers, and expansion flags.

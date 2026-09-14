@@ -6,6 +6,9 @@
 
 # Process editing functions
 
+For changes involving subprocesses or boundary handlers, plan a `replace_process`
+operation with the complete updated process, preserving unchanged IDs and scopes.
+
 - `delete_element(element_id)`
 - `redirect_branch(branch_condition, next_id)`
 - `add_element(element, before_id=None, after_id=None)`
