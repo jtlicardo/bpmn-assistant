@@ -2,7 +2,7 @@
   <img src="assets/bpmn_assistant_logo.png" alt="BPMN Assistant" width="480">
 </p>
 
-# BPMN Assistant - turn process descriptions into editable BPMN diagrams
+# Turn process descriptions into editable BPMN diagrams
 
 Describe a business process in plain language, refine it through conversation, and export a `.bpmn` file. An open-source AI assistant for drafting, exploring, and explaining business processes.
 
