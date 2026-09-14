@@ -2,14 +2,15 @@
   <div>
     <v-select
       class="model-picker"
-      placeholder="Select model"
+      :placeholder="loadingProviders ? 'Connecting to backend...' : 'Select model'"
+      :loading="loadingProviders"
       density="compact"
       :items="availableModels"
       :modelValue="selectedModel"
       @update:modelValue="onModelChange"
       hide-details
       :list-props="{ density: 'compact' }"
-      no-data-text="Please provide API keys"
+      :no-data-text="loadingProviders ? 'Waiting for the backend to start...' : 'Please provide API keys'"
       variant="outlined"
     ></v-select>
   </div>
@@ -65,6 +66,10 @@ export default {
         },
       ],
       availableProviders: [],
+      loadingProviders: !isHostedVersion,
+      providerRetryTimer: null,
+      providerController: null,
+      disposed: false,
     };
   },
   computed: {
@@ -89,6 +94,11 @@ export default {
       this.$emit('select-model', model);
     },
     async fetchAvailableProviders() {
+      clearTimeout(this.providerRetryTimer);
+      this.providerController?.abort();
+      const controller = new AbortController();
+      this.providerController = controller;
+      let timeout;
       try {
         const apiKeys = getApiKeys();
 
@@ -102,6 +112,8 @@ export default {
             this.availableProviders.push(Providers.ANTHROPIC);
           }
         } else {
+          this.loadingProviders = true;
+          timeout = setTimeout(() => controller.abort(), 5000);
           // Local mode: check backend (which uses .env file)
           const response = await fetch(
             `${bpmnAssistantUrl}/available_providers`,
@@ -109,6 +121,7 @@ export default {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ api_keys: apiKeys }),
+              signal: controller.signal,
             }
           );
 
@@ -117,6 +130,7 @@ export default {
           }
 
           const data = await response.json();
+          if (this.disposed || this.providerController !== controller) return;
 
           this.availableProviders = Object.keys(data).filter(
             (provider) => data[provider]
@@ -127,18 +141,31 @@ export default {
         const hasProviders = this.availableProviders.length > 0;
         this.$parent.setHasAvailableProviders(hasProviders);
 
-        if (this.availableProviders.includes(Providers.OPENAI)) {
-          this.onModelChange(Models.GPT_5_6_SOL);
-        } else if (this.availableProviders.includes(Providers.ANTHROPIC)) {
-          this.onModelChange(Models.OPUS_5);
+        if (!this.availableModels.some((model) => model.value === this.selectedModel)) {
+          this.onModelChange(this.availableModels[0]?.value || '');
         }
+        this.loadingProviders = false;
       } catch (error) {
-        console.error('Error fetching available providers', error);
+        if (this.disposed || this.providerController !== controller) return;
+        // The frontend may be ready before the local API. Recover without a reload.
+        if (!isHostedVersion) {
+          this.providerRetryTimer = setTimeout(() => this.fetchAvailableProviders(), 2000);
+        } else {
+          this.loadingProviders = false;
+          console.error('Error fetching available providers', error);
+        }
+      } finally {
+        clearTimeout(timeout);
       }
     },
   },
   mounted() {
     this.fetchAvailableProviders();
+  },
+  beforeUnmount() {
+    this.disposed = true;
+    clearTimeout(this.providerRetryTimer);
+    this.providerController?.abort();
   },
 };
 </script>

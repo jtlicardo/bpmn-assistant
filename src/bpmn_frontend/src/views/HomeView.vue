@@ -1,5 +1,7 @@
 <template>
-  <div style="display: flex; flex-direction: row; height: 100vh">
+  <div class="workspace">
+    <header id="workspace-header"></header>
+    <div class="workspace-body">
     <div class="chat-container">
       <ChatInterface
         @bpmn-xml-received="handleBpmnXml"
@@ -15,6 +17,7 @@
       @dragover.prevent
       @drop="handleDrop"
     ></div>
+    </div>
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3000">
       {{ snackbar.text }}
     </v-snackbar>
@@ -201,25 +204,19 @@ export default {
 </script>
 
 <style>
-#canvas {
-  margin: 10px;
+.workspace { height: 100dvh; display: flex; flex-direction: column; background: #f7f8fa; color: #202938; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+#workspace-header { flex: 0 0 72px; background: white; border-bottom: 1px solid #e6e9ef; z-index: 5; }
+.workspace-body { display: flex; flex: 1; min-height: 0; }
+.chat-container { flex: 0 0 390px; min-width: 0; background: white; border-right: 1px solid #e6e9ef; }
+.canvas-container { flex: 1; min-width: 0; margin: 12px; border: 1px solid #e1e5ec; border-radius: 12px; overflow: hidden; background: white; }
+.canvas-container .djs-palette { border: 1px solid #e1e5ec; border-radius: 10px; background: #fff; box-shadow: 0 3px 12px #2636500a; }
+@media (max-width: 900px) {
+  .chat-container { flex-basis: 340px; }
+  #workspace-header { flex-basis: 112px; }
 }
-
-.chat-container {
-  flex: 3;
-}
-
-.canvas-container {
-  flex: 4;
-  border: 2px solid gray;
-}
-
-@media (min-width: 1800px) {
-  .chat-container {
-    flex: 2;
-  }
-  .canvas-container {
-    flex: 5;
-  }
+@media (max-width: 600px) {
+  .workspace-body { flex-direction: column-reverse; }
+  .chat-container { flex: 1; min-height: 0; border-right: 0; }
+  .canvas-container { flex: 0 0 35%; margin: 8px; }
 }
 </style>

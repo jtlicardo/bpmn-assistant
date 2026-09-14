@@ -1,75 +1,25 @@
 <template>
   <div class="chat-interface">
-    <div class="sticky-top">
-      <div class="d-flex align-center justify-space-between pa-2 gap-4">
-        <div class="d-flex align-center">
-          <v-icon
-            icon="mdi-chart-timeline-variant"
-            color="primary"
-            size="x-large"
-            class="mr-2"
-          />
+    <Teleport v-if="headerReady" to="#workspace-header">
+      <div class="workspace-topbar">
+        <div class="brand">
+          <span class="brand-mark"><v-icon icon="mdi-chart-timeline-variant" size="23" /></span>
           <span class="app-title">BPMN Assistant</span>
         </div>
-        <div class="d-flex align-center">
-          <v-tooltip text="New chat" location="bottom">
-            <template v-slot:activator="{ props }">
-              <v-btn
-                v-bind="props"
-                @click="reset"
-                :disabled="isLoading || messages.length === 0"
-                icon="mdi-refresh"
-                variant="text"
-                size="medium"
-                color="blue"
-                class="mr-5"
-              >
-              </v-btn>
-            </template>
-          </v-tooltip>
-
-          <v-tooltip
-            text="Download BPMN"
-            v-if="isDownloadReady"
-            location="bottom"
-          >
-            <template v-slot:activator="{ props }">
-              <v-btn
-                v-bind="props"
-                @click="onDownload"
-                :disabled="isLoading"
-                icon="mdi-download"
-                variant="text"
-                size="medium"
-                color="orange"
-                class="mr-5"
-              >
-              </v-btn>
-            </template>
-          </v-tooltip>
-          <v-tooltip text="API Keys" location="bottom" v-if="isHostedVersion">
-            <template v-slot:activator="{ props }">
-              <v-btn
-                v-bind="props"
-                @click="showApiKeysModal = true"
-                icon="mdi-key"
-                variant="text"
-                size="medium"
-                color="grey-darken-1"
-                class="mr-2"
-              >
-              </v-btn>
-            </template>
-          </v-tooltip>
-          <ModelPicker
-            @select-model="setSelectedModel"
-            :has-images="hasImages"
-            ref="modelPicker"
-          />
+        <div class="header-actions">
+          <ModelPicker @select-model="setSelectedModel" :has-images="hasImages" ref="modelPicker" />
+          <v-btn v-if="isHostedVersion" @click="showApiKeysModal = true"
+            icon="mdi-key-outline" aria-label="API keys" title="API keys" variant="text" size="small" />
+          <v-btn @click="reset" :disabled="isLoading || messages.length === 0"
+            prepend-icon="mdi-plus" variant="text" class="header-button">New chat</v-btn>
+          <v-btn @click="onDownload" :disabled="isLoading || !isDownloadReady"
+            prepend-icon="mdi-download" variant="flat" class="export-button">Export BPMN</v-btn>
         </div>
       </div>
+    </Teleport>
+    <div class="conversation-heading">
+      <span><v-icon icon="mdi-auto-fix" size="17" /> Assistant</span>
     </div>
-
     <ApiKeysModal
       v-if="isHostedVersion"
       :show="showApiKeysModal"
@@ -78,7 +28,7 @@
       @keys-updated="handleKeysUpdated"
     />
 
-    <div class="message-container">
+    <div class="conversation-messages">
       <div v-if="messages.length > 0" class="message-list">
         <MessageCard
           v-for="(message, index) in messages"
@@ -158,7 +108,7 @@
                 v-bind="props"
                 @click="triggerFileInput"
                 :disabled="isLoading || !isOpenAIModel"
-                icon="mdi-image-plus"
+                icon="mdi-paperclip" aria-label="Attach image"
                 variant="text"
                 size="small"
                 class="attach-button"
@@ -168,16 +118,16 @@
             </template>
           </v-tooltip>
           <v-textarea
-            label="Message BPMN Assistant..."
+            placeholder="Describe a process or ask for a change..." aria-label="Message BPMN Assistant"
             v-model="currentInput"
             :counter="10000"
-            rows="4"
+            rows="3" auto-grow max-rows="7"
             @keydown.enter.prevent="handleKeyDown"
             @paste="handlePaste"
             hide-details
             class="input-textarea"
             density="comfortable"
-            variant="outlined"
+            variant="plain"
             bg-color="white"
           >
           </v-textarea>
@@ -185,19 +135,17 @@
             @click="handleMessageSubmit"
             :disabled="isLoading || (!currentInput.trim() && selectedImages.length === 0)"
             color="primary"
-            class="send-button"
-            icon="mdi-send"
+            class="send-button" title="Send message"
+            icon="mdi-arrow-up" aria-label="Send message"
             variant="text"
             size="small"
           >
           </v-btn>
+          <span class="composer-hint">Shift + Enter for a new line</span>
         </div>
       </div>
     </div>
 
-    <p class="text-caption text-center mt-2 mb-2">
-      This application uses LLMs and may produce varying results.
-    </p>
 
     <v-snackbar
       v-model="showImageLimitSnackbar"
@@ -251,6 +199,7 @@ export default {
   },
   data() {
     return {
+      headerReady: false,
       isLoading: false,
       messages: [],
       currentInput: '',
@@ -266,6 +215,9 @@ export default {
       hasAvailableProviders: false,
       isHostedVersion: isHostedVersion,
     };
+  },
+  mounted() {
+    this.headerReady = true;
   },
   computed: {
     isOpenAIModel() {
@@ -666,7 +618,7 @@ export default {
       }
     },
     scrollToBottom() {
-      const messageContainer = this.$el.querySelector('.message-container');
+      const messageContainer = this.$el.querySelector('.conversation-messages');
       messageContainer.scrollTop = messageContainer.scrollHeight;
     },
     handleFileSelect(event) {
@@ -832,103 +784,48 @@ export default {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500&display=swap');
-
-.chat-interface {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  max-width: 600px;
-  margin: 0 auto;
+.chat-interface { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.workspace-topbar { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 24px; font-family: inherit; }
+.brand, .header-actions { display: flex; align-items: center; gap: 12px; }
+.brand-mark { display: grid; place-items: center; width: 36px; height: 36px; background: #edf2ff; color: #4169d5; border: 1px solid #dee7ff; border-radius: 10px; }
+.app-title { font-size: 17px; font-weight: 650; letter-spacing: -.5px; white-space: nowrap; }
+.header-button, .export-button { text-transform: none; letter-spacing: 0; border-radius: 8px; font-size: 13px; font-weight: 600; }
+.export-button { background: #4169d5; color: #fff; }
+.header-actions :deep(.model-picker .v-field) { border-radius: 8px; font-size: 13px; color: #465166; }
+.header-actions :deep(.v-field__outline) { --v-field-border-opacity: .15; }
+.conversation-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 22px 22px 16px; font-size: 13px; font-weight: 600; }
+.conversation-heading .v-icon { margin-right: 6px; color: #4169d5; }
+.conversation-messages { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 20px 20px; scrollbar-width: thin; scrollbar-color: #d8deea transparent; }
+.message-list { display: flex; flex-direction: column; }
+.input-area { padding: 12px 16px 16px; background: white; }
+.input-wrapper { padding: 12px; border: 1px solid #dce2ed; border-radius: 16px; background: white; box-shadow: 0 4px 16px #29385308; transition: border-color .15s, box-shadow .15s; }
+.input-wrapper:focus-within { border-color: #7c97e6; box-shadow: 0 0 0 3px #4169d510; }
+.input-controls { display: grid; grid-template-columns: 32px 1fr 32px; gap: 4px; align-items: center; }
+.input-textarea { grid-column: 1 / -1; grid-row: 1; }
+.input-textarea :deep(.v-field__input) { font-size: 13px; line-height: 1.6; padding: 0 2px 10px; mask-image: none; }
+.input-textarea :deep(.v-field) { --v-field-padding-top: 0px; }
+.attach-button { grid-column: 1; grid-row: 2; }
+.send-button { grid-column: 3; grid-row: 2; background: #4169d5; color: white !important; border-radius: 10px; }
+.send-button:disabled { background: #e9edf5; color: #95a1b5 !important; opacity: 1; }
+.composer-hint { grid-column: 2; grid-row: 2; font-size: 10px; color: #8892a2; padding-left: 4px; }
+.input-area.drag-over .input-wrapper { background: #f3f6ff; border-color: #4169d5; }
+.image-preview-container { display: flex; gap: 8px; padding-bottom: 10px; flex-wrap: wrap; }
+.image-preview-item { position: relative; width: 64px; height: 64px; border-radius: 8px; overflow: hidden; border: 1px solid #dce2ed; }
+.preview-image { width: 100%; height: 100%; object-fit: cover; }
+.remove-image-btn { position: absolute; top: 2px; right: 2px; background: #ffffffed; }
+@media (max-width: 900px) {
+ .workspace-topbar { padding: 12px 16px; flex-wrap: wrap; gap: 10px; align-content: center; }
+ .brand { flex: 1 0 100%; }
+ .brand-mark { width: 28px; height: 28px; }
+ .header-actions { width: 100%; justify-content: flex-end; gap: 8px; }
+ .header-actions > :first-child { margin-right: auto; }
+ .conversation-heading { padding: 16px; }
 }
-
-.sticky-top {
-  position: sticky;
-  top: 0;
-  background-color: white;
-  z-index: 1;
-  padding: 4px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-}
-
-.message-container {
-  flex-grow: 1;
-  overflow-y: auto;
-  padding: 16px;
-}
-
-.message-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.input-area {
-  margin-top: auto;
-  padding: 16px;
-  background-color: white;
-  border-top: 1px solid rgba(0, 0, 0, 0.12);
-}
-
-.input-wrapper {
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-.input-controls {
-  display: flex;
-  align-items: flex-end;
-}
-
-.input-textarea {
-  flex-grow: 1;
-}
-
-.app-title {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.5rem;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-  background: linear-gradient(45deg, var(--v-primary-base), #666);
-  margin-bottom: 0;
-}
-
-.input-area.drag-over {
-  background-color: #e3f2fd;
-  border-color: #2196f3;
-}
-
-.image-preview-container {
-  display: flex;
-  gap: 8px;
-  padding: 0 0 8px 0;
-  flex-wrap: wrap;
-  margin-left: 44px;
-}
-
-.image-preview-item {
-  position: relative;
-  width: 80px;
-  height: 80px;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 2px solid #e0e0e0;
-}
-
-.preview-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.remove-image-btn {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  background-color: rgba(255, 255, 255, 0.9);
-}
-
-.attach-button {
-  margin-right: 4px;
+@media (max-width: 600px) {
+ .workspace-topbar { padding: 10px; }
+ .header-actions :deep(.model-picker) { width: 150px; }
+ .header-button, .export-button { padding: 0 10px; font-size: 11px; min-width: 0; }
+ .conversation-heading { padding: 10px 16px; }
+ .composer-hint { display: none; }
 }
 </style>

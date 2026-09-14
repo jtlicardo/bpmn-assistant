@@ -52,102 +52,19 @@ export default {
 </script>
 
 <style scoped>
-.fade-enter-active {
-  transition: opacity 0.5s ease-out;
-}
-
-.fade-enter-from {
-  opacity: 0;
-}
-
-.fade-enter-to {
-  opacity: 1;
-}
-
-.fade-enter-active {
-  transition: opacity 0.5s ease-out, transform 0.3s ease-out;
-}
-
-.fade-enter-from {
-  opacity: 0;
-  transform: translateY(10px);
-}
-
-.fade-enter-to {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.message-container {
-  display: flex;
-  margin-bottom: 12px;
-  max-width: 85%;
-}
-
-.message-user {
-  justify-content: flex-end;
-  margin-left: auto;
-  margin-right: 8px;
-}
-
-.message-assistant {
-  justify-content: flex-start;
-  margin-left: 8px;
-  margin-right: auto;
-}
-
-.message-bubble {
-  padding: 10px 15px;
-  border-radius: 18px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  word-wrap: break-word;
-  position: relative;
-}
-
-.message-user .message-bubble {
-  background-color: #e1f5fe;
-  color: #333;
-  border-bottom-right-radius: 4px;
-}
-
-.message-assistant .message-bubble {
-  background-color: #f1f1f1;
-  color: #333;
-  border-bottom-left-radius: 4px;
-}
-
-.message-role {
-  font-size: 0.8em;
-  color: #555;
-  margin-bottom: 4px;
-}
-
-.message-content {
-  font-size: 1em;
-  line-height: 1.4;
-}
-
-.message-content ::v-deep(strong) {
-  font-weight: bold;
-}
-
-.message-content ::v-deep(br) {
-  content: '';
-  display: block;
-  margin-bottom: 0.2em;
-}
-
-.message-images {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-  flex-wrap: wrap;
-}
-
-.message-image {
-  max-width: 200px;
-  max-height: 200px;
-  border-radius: 8px;
-  object-fit: cover;
-}
+.fade-enter-active { transition: opacity .2s ease-out; }
+.fade-enter-from { opacity: 0; }
+.message-container { display: flex; margin-bottom: 24px; max-width: 100%; }
+.message-user { margin-left: 20px; }
+.message-bubble { width: 100%; padding: 14px 16px; border-radius: 12px; overflow-wrap: anywhere; }
+.message-user .message-bubble { background: #f0f4fc; color: #33415a; border: 1px solid #e7edf7; }
+.message-assistant .message-bubble { padding: 4px 2px; color: #475166; }
+.message-role { font-size: 11px; color: #7c879a; margin-bottom: 8px; }
+.message-assistant .message-role { color: #4169d5; }
+.message-content { font-size: 13px; line-height: 1.75; }
+.message-content :deep(strong) { color: #25334b; font-weight: 600; }
+.message-content :deep(br) { content: ''; display: block; margin-bottom: .3em; }
+.message-images { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.message-image { max-width: 100%; max-height: 200px; border-radius: 8px; object-fit: cover; }
+@media (prefers-reduced-motion: reduce) { .fade-enter-active { transition: none; } }
 </style>

@@ -1,85 +1,97 @@
+<p align="center">
+  <img src="assets/bpmn_assistant_logo.png" alt="BPMN Assistant" width="480">
+</p>
+
+# BPMN Assistant - turn process descriptions into editable BPMN diagrams
+
+Describe a business process in plain language, refine it through conversation, and export a `.bpmn` file. An open-source AI assistant for drafting, exploring, and explaining business processes.
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/jtlicardo/bpmn-assistant?style=social)](https://github.com/jtlicardo/bpmn-assistant/stargazers)
 [![CI](https://github.com/jtlicardo/bpmn-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/jtlicardo/bpmn-assistant/actions/workflows/ci.yml)
+[![GitHub stars](https://img.shields.io/github/stars/jtlicardo/bpmn-assistant?style=social)](https://github.com/jtlicardo/bpmn-assistant/stargazers)
 
+**[Try the app](https://bpmn-frontend.onrender.com)** · [Run locally](#run-locally-with-docker) · [Example prompts](#try-a-process) · [Research paper](https://doi.org/10.3390/app16052213)
 
-![Logo](assets/bpmn_assistant_logo.png)
-
-Describe a business process. Get a BPMN diagram.
-
-[Try BPMN Assistant](https://bpmn-frontend.onrender.com)
+Bring an OpenAI or Anthropic API key to get started.
 
 ![Purchase order process with message flows, a multi-instance task, and a text annotation](assets/app_screenshot.png)
 
+## From an idea to a process you can edit
+
+- **Describe your process.** Generate BPMN diagrams with tasks, gateways, events, pools, lanes, and message flows.
+- **Refine it in conversation.** Ask for an approval step, an alternative path, or a new participant.
+- **Start with existing work.** Import a BPMN file with drag and drop, or use an image to create or modify a process.
+- **Ask about the diagram.** Explore how an existing process works through questions.
+- **Keep an editable result.** Adjust the diagram in the visual editor and download it as a `.bpmn` file.
+- **Run it your way.** Use the hosted app or run locally with Docker and your own API keys.
+
+Useful for analysts drafting workflows, teams discussing process changes, and students learning BPMN.
+
+## Try a process
+
+Open the **[hosted app](https://bpmn-frontend.onrender.com)**, enter an API key, choose a model, and try this prompt:
+
+> Create a purchase request process. An employee submits a request. A manager reviews it. If approved, the purchasing team places the order and the process ends. If rejected, notify the employee and end the process. Use lanes for Employee, Manager, and Purchasing.
+
+Then refine it:
+
+> Add a finance approval step for requests over €5,000 before the purchasing team places the order. If finance rejects the request, notify the employee.
+
+Or ask a question:
+
+> Explain the approval paths in this process and who is responsible for each step.
+
+These are example prompts to explore; generated results can vary. Review the diagram before using it in your work.
+
 ## Quickstart
 
-### Option 1: Use the hosted version
+### Use the hosted app
 
-The easiest way to get started - no setup required!
+No local installation required. Visit **[bpmn-frontend.onrender.com](https://bpmn-frontend.onrender.com)** and provide an OpenAI or Anthropic API key in the interface. Model API usage is billed by your provider.
 
-Visit **[bpmn-frontend.onrender.com](https://bpmn-frontend.onrender.com)** and provide your own API keys directly in the interface. Your keys are stored locally in your browser and never stored on any servers.
+The hosted interface keeps keys in your browser's session storage and sends them to the backend to make model requests. Your process content is sent to the selected model provider for AI features.
 
-### Option 2: Run locally with Docker
+### Run locally with Docker
 
-1. Clone the repository
+You need Docker with Docker Compose and at least one OpenAI or Anthropic API key.
 
-```
+**1. Clone the repository.**
+
+```sh
 git clone https://github.com/jtlicardo/bpmn-assistant.git
-```
-
-```
 cd bpmn-assistant
 ```
 
-2. Set up your environment variables
+**2. Create your environment file from the repository root.**
 
-<details>
-<summary>Linux, macOS</summary>
+Linux / macOS:
 
-```
-cd src/bpmn_assistant
-```
-
-```
-cp .env.example .env
+```sh
+cp src/bpmn_assistant/.env.example src/bpmn_assistant/.env
 ```
 
-</details>
+Windows PowerShell:
 
-<details>
-<summary>Windows</summary>
-
-```
-cd src\bpmn_assistant
+```powershell
+Copy-Item src/bpmn_assistant/.env.example src/bpmn_assistant/.env
 ```
 
-```
-copy .env.example .env
-```
+Edit `src/bpmn_assistant/.env` and fill in at least one key:
 
-</details>
-
-3. Open the `.env` file and replace the placeholder values with your actual API keys.
-
-4. Build and run the application
-
-```
-docker-compose up --build
+```dotenv
+OPENAI_API_KEY='your-openai-api-key'
+ANTHROPIC_API_KEY=''
 ```
 
-5. Open your browser and go to `http://localhost:8080`
+To use Anthropic instead, fill in `ANTHROPIC_API_KEY` and leave the OpenAI value empty. You can also configure both.
 
-## Prerequisites
+**3. Start the app from the repository root.**
 
-At least one of the following API keys:
-- [OpenAI API key](https://platform.openai.com/docs/quickstart)
-- [Anthropic API key](https://console.anthropic.com/)
+```sh
+docker compose up --build
+```
 
-Note: You can use any combination of the API keys above, but at least one is required to use the app.
-
-Additional prerequisites for local deployment:
-- [Docker](https://docs.docker.com/get-docker/)
-- [Docker Compose](https://docs.docker.com/compose/install/)
+Open **[localhost:8080](http://localhost:8080)**. Local deployment reads API keys from the backend environment file; AI features still call the selected model provider.
 
 ## Supported models
 
@@ -92,14 +104,6 @@ Additional prerequisites for local deployment:
 
 * Claude Opus 5
 * Claude Sonnet 5
-
-## Core features
-
-**Create** - Generate BPMN diagrams from plain-language descriptions, including pools, lanes, and message flows.
-
-**Edit** - Modify processes conversationally or import BPMN files with drag and drop.
-
-**Understand** - Ask questions about existing diagrams or use images to create and modify processes.
 
 ## Supported elements
 
@@ -157,6 +161,15 @@ Text annotations and their associations are also supported.
 
 [BPMN Assistant: An LLM-Based Approach to Business Process Modeling](https://doi.org/10.3390/app16052213)
 
-## Contact
+## Contribute
+
+Bug reports, example processes, and pull requests are welcome.
+
+- **Found a modeling issue?** [Open an issue](https://github.com/jtlicardo/bpmn-assistant/issues) with the prompt, selected model, expected behavior, and a screenshot or BPMN file that reproduces it. Remove API keys and private process details before sharing.
+- **Have a feature idea?** Describe the process you want to model and what is missing.
+
+## License and contact
+
+Released under the [MIT License](LICENSE).
 
 If you have any questions or feedback, please open an issue on this GitHub repository or [contact me](https://jtlicardo.com/).
