@@ -56,15 +56,11 @@ class LiteLLMProvider(LLMProvider):
             "api_key": self.api_key,
             "model": model,
             "messages": messages,
+            "max_tokens": max_tokens,
         }
 
         if structured_output is not None or self.output_mode == OutputMode.JSON:
             params["response_format"] = {"type": "json_object"}
-
-        params["max_tokens"] = max_tokens
-
-        # Current reasoning and adaptive-thinking models only support temperature=1.
-        params["temperature"] = 1
 
         logger.debug(
             f"Sending prompt (model={model}): {json.dumps(messages, indent=2)}"
@@ -93,15 +89,11 @@ class LiteLLMProvider(LLMProvider):
     ) -> Generator[str, None, None]:
         self._validate_vision_support(model, messages)
 
-        # Current reasoning and adaptive-thinking models only support temperature=1.
-        temperature = 1
-
         response = completion(
             api_key=self.api_key,
             model=model,
             messages=messages,
             max_tokens=max_tokens,
-            temperature=temperature,
             stream=True,
         )
 

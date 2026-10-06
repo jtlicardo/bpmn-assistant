@@ -222,8 +222,8 @@ export default {
   computed: {
     isOpenAIModel() {
       return (
-        this.selectedModel === 'gpt-5.6-sol' ||
-        this.selectedModel === 'gpt-5.6-luna'
+        this.selectedModel === 'gpt-6.1-sol' ||
+        this.selectedModel === 'gpt-6-luna'
       );
     },
     hasImages() {

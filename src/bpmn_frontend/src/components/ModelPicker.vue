@@ -21,10 +21,10 @@ import { bpmnAssistantUrl, isHostedVersion } from '../config';
 import { getApiKeys } from '../utils/apiKeys';
 
 const Models = Object.freeze({
-  GPT_5_6_SOL: 'gpt-5.6-sol',
-  GPT_5_6_LUNA: 'gpt-5.6-luna',
-  OPUS_5: 'claude-opus-5',
-  SONNET_5: 'claude-sonnet-5',
+  GPT_6_1_SOL: 'gpt-6.1-sol',
+  GPT_6_LUNA: 'gpt-6-luna',
+  OPUS_5_5: 'claude-opus-5-5',
+  SONNET_5_5: 'claude-sonnet-5-5',
 });
 
 const Providers = Object.freeze({
@@ -45,23 +45,23 @@ export default {
       selectedModel: '',
       models: [
         {
-          value: Models.GPT_5_6_SOL,
-          title: 'GPT-5.6 Sol',
+          value: Models.GPT_6_1_SOL,
+          title: 'GPT-6.1 Sol',
           provider: Providers.OPENAI,
         },
         {
-          value: Models.GPT_5_6_LUNA,
-          title: 'GPT-5.6 Luna',
+          value: Models.GPT_6_LUNA,
+          title: 'GPT-6 Luna',
           provider: Providers.OPENAI,
         },
         {
-          value: Models.OPUS_5,
-          title: 'Claude Opus 5',
+          value: Models.OPUS_5_5,
+          title: 'Claude Opus 5.5',
           provider: Providers.ANTHROPIC,
         },
         {
-          value: Models.SONNET_5,
-          title: 'Claude Sonnet 5',
+          value: Models.SONNET_5_5,
+          title: 'Claude Sonnet 5.5',
           provider: Providers.ANTHROPIC,
         },
       ],

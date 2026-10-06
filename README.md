@@ -101,13 +101,13 @@ Open **[localhost:8080](http://localhost:8080)**. Local deployment reads API key
 
 ### OpenAI
 
-* GPT-5.6 Sol
-* GPT-5.6 Luna
+* GPT-6.1 Sol
+* GPT-6 Luna
 
 ### Anthropic
 
-* Claude Opus 5
-* Claude Sonnet 5
+* Claude Opus 5.5
+* Claude Sonnet 5.5
 
 ## Supported elements
 
